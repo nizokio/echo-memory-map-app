@@ -130,10 +130,10 @@ function StackCard({
       zIndex = 20; // keep it on top while flying down
     } else {
       // Stacked behind the active card, offset upwards
-      translateY = -diff * 15; // offset upwards
-      scale = 1 - diff * 0.05; // slightly scaled down
+      translateY = -diff * 28; // increased peek offset
+      scale = 1 - diff * 0.04; // gentler scale reduction
       // Fade out slowly as it goes deeper in the deck
-      opacity = interpolate(diff, [0, 3], [1, 0.4], 'clamp');
+      opacity = interpolate(diff, [0, 3], [1, 0.5], 'clamp');
       zIndex = Math.round(10 - diff);
     }
 

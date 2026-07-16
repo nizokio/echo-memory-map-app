@@ -5,7 +5,6 @@ import { AuthRepository } from './AuthRepository';
 
 WebBrowser.maybeCompleteAuthSession();
 
-const REDIRECT_SCHEME = 'echo';
 const REDIRECT_PATH = 'auth/callback';
 
 export class SupabaseAuthRepository extends AuthRepository {
@@ -33,6 +32,7 @@ export class SupabaseAuthRepository extends AuthRepository {
     }
 
     const redirectTo = this.getRedirectUri();
+    console.log('Echo Google OAuth redirect URL:', redirectTo);
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
@@ -59,7 +59,6 @@ export class SupabaseAuthRepository extends AuthRepository {
 
   getRedirectUri() {
     return AuthSession.makeRedirectUri({
-      scheme: REDIRECT_SCHEME,
       path: REDIRECT_PATH,
     });
   }

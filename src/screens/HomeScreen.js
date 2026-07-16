@@ -91,8 +91,8 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: '800',
     color: colors.ink,
-    marginTop: 36,
-    marginBottom: 12,
+    marginTop: 16,
+    marginBottom: 32,
   },
   subtitle: {
     ...typography.caption,

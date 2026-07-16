@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
 const supabasePublishableKey = process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
@@ -8,8 +9,9 @@ export const isSupabaseConfigured = Boolean(supabaseUrl && supabasePublishableKe
 export const supabase = isSupabaseConfigured
   ? createClient(supabaseUrl, supabasePublishableKey, {
       auth: {
-        autoRefreshToken: false,
-        persistSession: false,
+        storage: AsyncStorage,
+        autoRefreshToken: true,
+        persistSession: true,
         detectSessionInUrl: false,
       },
     })

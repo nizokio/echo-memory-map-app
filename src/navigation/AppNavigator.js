@@ -7,7 +7,7 @@ import {
 
 import MainTabsScreen from '../screens/MainTabsScreen';
 import DetailScreen from '../screens/DetailScreen';
-import ItineraryScreen from '../screens/ItineraryScreen';
+import MemoryTimelineScreen from '../screens/MemoryTimelineScreen';
 
 const Stack = createStackNavigator();
 
@@ -24,7 +24,7 @@ export default function AppNavigator() {
       >
         <Stack.Screen name="Home" component={MainTabsScreen} />
         <Stack.Screen name="Detail" component={DetailScreen} />
-        <Stack.Screen name="Itinerary" component={ItineraryScreen} />
+        <Stack.Screen name="MemoryTimeline" component={MemoryTimelineScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

@@ -21,6 +21,6 @@ export const typography = {
   button: { fontSize: 15, fontWeight: '700', fontFamily },
   seeMore: { fontSize: 14, fontWeight: '600', fontFamily },
   rating: { fontSize: 13, fontWeight: '400', fontFamily },
-  tourTitle: { fontSize: 14.5, fontWeight: '700', fontFamily },
-  tourMeta: { fontSize: 12, fontWeight: '400', fontFamily },
+  echoTitle: { fontSize: 14.5, fontWeight: '700', fontFamily },
+  echoMeta: { fontSize: 12, fontWeight: '400', fontFamily },
 };

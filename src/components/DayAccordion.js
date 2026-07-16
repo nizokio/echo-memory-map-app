@@ -12,7 +12,7 @@ import { colors, typography } from '../theme';
 const COLLAPSED_HEIGHT = 0;
 const EXPANDED_HEIGHT = 280;
 
-export default function DayAccordion({ dayData, defaultOpen = false }) {
+export default function DayAccordion({ moment, defaultOpen = false }) {
   const [open, setOpen] = useState(defaultOpen);
   const animHeight = useSharedValue(defaultOpen ? EXPANDED_HEIGHT : COLLAPSED_HEIGHT);
   const chevRotation = useSharedValue(defaultOpen ? 180 : 0);
@@ -40,10 +40,10 @@ export default function DayAccordion({ dayData, defaultOpen = false }) {
   return (
     <View style={styles.item}>
       <Pressable style={styles.head} onPress={toggle} accessibilityRole="button">
-        <Image source={{ uri: dayData.image }} style={styles.thumb} />
+        <Image source={{ uri: moment.image }} style={styles.thumb} />
         <View style={styles.txt}>
-          <Text style={styles.label}>Day {dayData.day}</Text>
-          <Text style={styles.name}>{dayData.title}</Text>
+          <Text style={styles.label}>{moment.label}</Text>
+          <Text style={styles.name}>{moment.title}</Text>
         </View>
         <Animated.View style={chevStyle}>
           <Feather name="chevron-down" size={16} color={colors.muted} />
@@ -51,10 +51,10 @@ export default function DayAccordion({ dayData, defaultOpen = false }) {
       </Pressable>
       <Animated.View style={[styles.body, bodyStyle]}>
         <View style={styles.bodyInner}>
-          {dayData.activities.map((activity, idx) => (
+          {moment.details.map((detail, idx) => (
             <View key={idx} style={styles.timeBlock}>
-              <Text style={styles.time}>{activity.time}</Text>
-              <Text style={styles.desc}>{activity.description}</Text>
+              <Text style={styles.time}>{detail.label}</Text>
+              <Text style={styles.desc}>{detail.text}</Text>
             </View>
           ))}
         </View>

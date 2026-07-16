@@ -10,6 +10,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import MapWebView from '../components/MapWebView';
 import { colors, typography } from '../theme';
+import { echoes } from '../data/echoes';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -104,7 +105,7 @@ export default function MapScreen({ navigation }) {
   return (
     <View style={styles.container}>
       {/* Full-bleed Map component */}
-      <MapWebView onPinTap={handlePinTap} recenterTrigger={recenterTrigger} />
+      <MapWebView echoes={echoes} onPinTap={handlePinTap} recenterTrigger={recenterTrigger} />
 
       {/* Floating Search Bar (Top) */}
       <View style={[styles.searchOuter, { paddingTop: insets.top + 10 }]}>
@@ -186,7 +187,8 @@ export default function MapScreen({ navigation }) {
             style={styles.openDetailsBtn}
             onPress={() => {
               handleCloseSheet();
-              // Navigate to details if needed
+              const echo = echoes.find((item) => item.id === selectedPin?.id);
+              if (echo) navigation.navigate('Detail', { echo });
             }}
             accessibilityRole="button"
           >

@@ -4,7 +4,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import Animated, { useSharedValue, useAnimatedScrollHandler, useAnimatedStyle, interpolate, useReducedMotion } from 'react-native-reanimated';
 import { colors, typography } from '../theme';
-import { getRelatedEchoes } from '../data/echoes';
+import { getRelatedEchoes } from '../domain/echo/echoRelations';
+import { useEchoes } from '../features/echoes/application/EchoDataProvider';
 import FavoriteButton from '../components/FavoriteButton';
 import EchoCard from '../components/EchoCard';
 
@@ -16,7 +17,8 @@ export default function DetailScreen({ navigation, route }) {
   const insets = useSafeAreaInsets();
   const echo = route.params?.echo;
   const [expanded, setExpanded] = useState(false);
-  const relatedEchoes = echo ? getRelatedEchoes(echo) : [];
+  const { echoes } = useEchoes();
+  const relatedEchoes = getRelatedEchoes(echoes, echo);
   const scrollY = useSharedValue(0);
   const reduceMotion = useReducedMotion();
   const scrollHandler = useAnimatedScrollHandler({ onScroll: (event) => { scrollY.value = event.contentOffset.y; } });

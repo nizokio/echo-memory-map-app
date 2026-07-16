@@ -10,7 +10,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import MapWebView from '../components/MapWebView';
 import { colors, typography } from '../theme';
-import { echoes } from '../data/echoes';
+import { useEchoes } from '../features/echoes/application/EchoDataProvider';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -21,8 +21,14 @@ const placeholders = [
   "Find the quiet forest library"
 ];
 
+const formatCapturedDate = (value) => {
+  if (!value) return 'Saved memory';
+  return new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric' }).format(new Date(value));
+};
+
 export default function MapScreen({ navigation }) {
   const insets = useSafeAreaInsets();
+  const { echoes } = useEchoes();
   const [selectedPin, setSelectedPin] = useState(null);
   const [recenterTrigger, setRecenterTrigger] = useState(0);
   const [searchFocused, setSearchFocused] = useState(false);
@@ -181,7 +187,7 @@ export default function MapScreen({ navigation }) {
           </View>
           
           <Text style={styles.sheetTitle}>{selectedPin?.title}</Text>
-          <Text style={styles.sheetDetails}>Saved memory · 2 hours ago</Text>
+          <Text style={styles.sheetDetails}>{formatCapturedDate(selectedPin?.capturedAt)}</Text>
           
           <Pressable
             style={styles.openDetailsBtn}

@@ -29,7 +29,7 @@ export default function EchoCard({ echo, onPress }) {
       accessibilityRole="button"
     >
       <View style={styles.imgBox}>
-        <Image source={{ uri: echo.photos[0]?.uri }} style={styles.image} />
+        {echo.photos[0]?.uri ? <Image source={{ uri: echo.photos[0].uri }} style={styles.image} /> : <View style={styles.imageFallback} />}
       </View>
       <FavoriteButton size={30} iconSize={14} style={styles.favMini} />
       <View style={styles.body}>
@@ -48,6 +48,7 @@ const styles = StyleSheet.create({
   card: { width: 220, borderRadius: 22, overflow: 'hidden', marginRight: 14, shadowColor: '#000', shadowOffset: { width: 0, height: 14 }, shadowOpacity: 0.3, shadowRadius: 26, elevation: 8, backgroundColor: '#fff' },
   imgBox: { height: 130, overflow: 'hidden' },
   image: { width: '100%', height: '100%', resizeMode: 'cover' },
+  imageFallback: { width: '100%', height: '100%', backgroundColor: colors.pill },
   favMini: { position: 'absolute', top: 10, right: 10 },
   body: { padding: 12, paddingHorizontal: 14, paddingBottom: 16, backgroundColor: '#fff' },
   title: { ...typography.echoTitle, color: colors.ink, marginBottom: 4 },

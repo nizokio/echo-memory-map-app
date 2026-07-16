@@ -27,7 +27,7 @@ export default function HomeScreen({ navigation }) {
         bounces={false}
         contentContainerStyle={[
           styles.content,
-          { paddingTop: insets.top + 16, paddingBottom: 130 },
+          { paddingTop: insets.top + 16, paddingBottom: 150 },
         ]}
         showsVerticalScrollIndicator={false}
       >

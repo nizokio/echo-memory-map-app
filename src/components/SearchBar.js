@@ -55,14 +55,12 @@ const styles = StyleSheet.create({
   bar: {
     flex: 1,
     backgroundColor: colors.pill,
-    borderRadius: 16,
+    borderRadius: 28, // capsule rounded sides
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
     paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderWidth: 1,
-    borderColor: colors.line,
+    paddingHorizontal: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
@@ -76,7 +74,7 @@ const styles = StyleSheet.create({
   filterBtn: {
     width: 48,
     height: 48,
-    borderRadius: 16,
+    borderRadius: 24, // fully circular button
     backgroundColor: colors.ink,
     alignItems: 'center',
     justifyContent: 'center',

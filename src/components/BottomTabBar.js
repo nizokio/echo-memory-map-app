@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, StyleSheet } from 'react-native';
+import { Pressable, StyleSheet, Dimensions } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   withTiming,
@@ -7,6 +7,9 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const TAB_BAR_WIDTH = 290; // Shorter horizontal length
 
 const tabs = [
   { key: 'home', icon: 'home-outline', iconActive: 'home' },
@@ -52,7 +55,7 @@ export default function BottomTabBar({ visible = true, activeTab = 0, onTabPress
           >
             <Ionicons
               name={isActive ? tab.iconActive : tab.icon}
-              size={isCenter ? 22 : 20}
+              size={isCenter ? 24 : 22} // Slightly larger icons
               color={isCenter ? '#fff' : (isActive ? '#111' : '#9a9ea6')}
             />
           </Pressable>
@@ -65,15 +68,15 @@ export default function BottomTabBar({ visible = true, activeTab = 0, onTabPress
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    left: 20,
-    right: 20,
-    bottom: 18,
-    height: 64,
+    left: (SCREEN_WIDTH - TAB_BAR_WIDTH) / 2,
+    width: TAB_BAR_WIDTH,
+    bottom: 20,
+    height: 70, // Slightly bigger height
     backgroundColor: colors.ink,
-    borderRadius: 32,
+    borderRadius: 35,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-around',
+    justifyContent: 'space-evenly', // Brings icons closer together
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 16 },
     shadowOpacity: 0.5,
@@ -82,9 +85,9 @@ const styles = StyleSheet.create({
     zIndex: 60,
   },
   navItem: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 46, // Slightly bigger touch targets
+    height: 46,
+    borderRadius: 23,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -93,8 +96,11 @@ const styles = StyleSheet.create({
   },
   centerNavItem: {
     backgroundColor: '#ff7a4d', // primary solid orange accent
-    borderRadius: 22,
-    transform: [{ scale: 1.05 }],
+    width: 50, // Slightly bigger center button
+    height: 50,
+    borderRadius: 25,
+    alignItems: 'center',
+    justifyContent: 'center',
     shadowColor: '#ff7a4d',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.35,

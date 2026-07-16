@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import { Pressable, View, Text, ScrollView, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors, typography } from '../theme';
@@ -8,7 +8,7 @@ import { useCurrentUser } from '../features/users/application/UserDataProvider';
 import SearchBar from '../components/SearchBar';
 import VerticalEchoStack from '../components/VerticalEchoStack';
 
-export default function HomeScreen({ navigation }) {
+export default function HomeScreen({ navigation, onProfilePress }) {
   const insets = useSafeAreaInsets();
   const [currentIndex, setCurrentIndex] = useState(0);
   const { echoes, isLoading, error, isSupabaseConfigured } = useEchoes();
@@ -30,7 +30,9 @@ export default function HomeScreen({ navigation }) {
       <ScrollView style={styles.scroll} bounces={false} contentContainerStyle={[styles.content, { paddingTop: insets.top + 16, paddingBottom: 150 }]} showsVerticalScrollIndicator={false}>
         <View style={styles.helloRow}>
           <View><Text style={styles.greeting}>{greeting}</Text><Text style={styles.subtitle}>Welcome to Echo</Text></View>
-          <LinearGradient colors={[colors.avatarGradientStart, colors.avatarGradientEnd]} start={{ x: 0.2, y: 0 }} end={{ x: 0.8, y: 1 }} style={styles.avatar}><Text style={styles.avatarEmoji}>{avatarInitial}</Text></LinearGradient>
+          <Pressable onPress={onProfilePress} accessibilityRole="button" accessibilityLabel="Open profile">
+            <LinearGradient colors={[colors.avatarGradientStart, colors.avatarGradientEnd]} start={{ x: 0.2, y: 0 }} end={{ x: 0.8, y: 1 }} style={styles.avatar}><Text style={styles.avatarEmoji}>{avatarInitial}</Text></LinearGradient>
+          </Pressable>
         </View>
         <SearchBar />
         <Text style={styles.memoriesHeading}>Echoes</Text>

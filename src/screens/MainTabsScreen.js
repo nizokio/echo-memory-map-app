@@ -16,7 +16,7 @@ export default function MainTabsScreen({ navigation }) {
   const renderContent = () => {
     switch (activeTab) {
       case 0:
-        return <HomeScreen navigation={navigation} />;
+        return <HomeScreen navigation={navigation} onProfilePress={() => setActiveTab(4)} />;
       case 1:
         return <MapScreen navigation={navigation} />;
       case 3:
@@ -24,7 +24,7 @@ export default function MainTabsScreen({ navigation }) {
       case 4:
         return <ProfilePlaceholder />;
       default:
-        return <HomeScreen navigation={navigation} />;
+        return <HomeScreen navigation={navigation} onProfilePress={() => setActiveTab(4)} />;
     }
   };
 

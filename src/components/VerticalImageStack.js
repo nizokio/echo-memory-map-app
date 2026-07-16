@@ -153,8 +153,8 @@ function StackCard({
     if (diff > total / 2) diff -= total;
     if (diff < -total / 2) diff += total;
 
-    // When diff < 0 card is flying away — fade gradient from 1 → 0
-    const gradientOpacity = interpolate(diff, [-0.6, 0], [0, 1], 'clamp');
+    // Fade out immediately as soon as card starts moving
+    const gradientOpacity = interpolate(diff, [-0.08, 0], [0, 1], 'clamp');
     return { opacity: gradientOpacity };
   });
 

@@ -10,9 +10,10 @@ import { colors } from '../theme';
 
 const tabs = [
   { key: 'home', icon: 'home-outline', iconActive: 'home' },
-  { key: 'explore', icon: 'grid-outline', iconActive: 'grid' },
-  { key: 'favorites', icon: 'heart-outline', iconActive: 'heart' },
-  { key: 'menu', icon: 'apps-outline', iconActive: 'apps' },
+  { key: 'map', icon: 'navigate-outline', iconActive: 'navigate' },
+  { key: 'camera', icon: 'camera-outline', iconActive: 'camera', isCenter: true },
+  { key: 'search', icon: 'search-outline', iconActive: 'search' },
+  { key: 'profile', icon: 'person-outline', iconActive: 'person' },
 ];
 
 export default function BottomTabBar({ visible = true, activeTab = 0, onTabPress }) {
@@ -36,18 +37,23 @@ export default function BottomTabBar({ visible = true, activeTab = 0, onTabPress
     <Animated.View style={[styles.container, containerStyle]} pointerEvents={visible ? 'auto' : 'none'}>
       {tabs.map((tab, index) => {
         const isActive = index === activeTab;
+        const isCenter = tab.isCenter;
         return (
           <Pressable
             key={tab.key}
-            style={[styles.navItem, isActive && styles.navItemActive]}
+            style={[
+              styles.navItem,
+              isActive && !isCenter && styles.navItemActive,
+              isCenter && styles.centerNavItem
+            ]}
             onPress={() => onTabPress?.(index)}
             accessibilityLabel={tab.key}
             accessibilityRole="tab"
           >
             <Ionicons
               name={isActive ? tab.iconActive : tab.icon}
-              size={20}
-              color={isActive ? '#111' : '#9a9ea6'}
+              size={isCenter ? 22 : 20}
+              color={isCenter ? '#fff' : (isActive ? '#111' : '#9a9ea6')}
             />
           </Pressable>
         );
@@ -84,5 +90,15 @@ const styles = StyleSheet.create({
   },
   navItemActive: {
     backgroundColor: '#fff',
+  },
+  centerNavItem: {
+    backgroundColor: '#ff7a4d', // primary solid orange accent
+    borderRadius: 22,
+    transform: [{ scale: 1.05 }],
+    shadowColor: '#ff7a4d',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    elevation: 8,
   },
 });

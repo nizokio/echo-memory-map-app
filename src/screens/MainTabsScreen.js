@@ -4,10 +4,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import HomeScreen from './HomeScreen';
 import MapScreen from './MapScreen';
 import BottomTabBar from '../components/BottomTabBar';
+import CameraView from '../components/CameraView';
 import { colors, typography } from '../theme';
 
 export default function MainTabsScreen({ navigation }) {
   const [activeTab, setActiveTab] = useState(0);
+  const [cameraVisible, setCameraVisible] = useState(false);
 
   const renderContent = () => {
     switch (activeTab) {
@@ -15,12 +17,20 @@ export default function MainTabsScreen({ navigation }) {
         return <HomeScreen navigation={navigation} />;
       case 1:
         return <MapScreen navigation={navigation} />;
-      case 2:
-        return <SearchPlaceholder />;
       case 3:
+        return <SearchPlaceholder />;
+      case 4:
         return <ProfilePlaceholder />;
       default:
         return <HomeScreen navigation={navigation} />;
+    }
+  };
+
+  const handleTabPress = (index) => {
+    if (index === 2) {
+      setCameraVisible(true);
+    } else {
+      setActiveTab(index);
     }
   };
 
@@ -35,7 +45,13 @@ export default function MainTabsScreen({ navigation }) {
       <BottomTabBar
         visible={true}
         activeTab={activeTab}
-        onTabPress={setActiveTab}
+        onTabPress={handleTabPress}
+      />
+
+      {/* Full-screen Camera Overlay */}
+      <CameraView
+        visible={cameraVisible}
+        onClose={() => setCameraVisible(false)}
       />
     </View>
   );

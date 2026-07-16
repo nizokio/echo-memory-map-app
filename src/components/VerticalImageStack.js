@@ -147,14 +147,14 @@ function StackCard({
     };
   });
 
-  // Gradient fades out as card flies downward off-screen
+  // Gradient fades instantly the moment a swipe begins
   const gradientStyle = useAnimatedStyle(() => {
     let diff = (index - stackProgress.value) % total;
     if (diff > total / 2) diff -= total;
     if (diff < -total / 2) diff += total;
 
-    // Fade out immediately as soon as card starts moving
-    const gradientOpacity = interpolate(diff, [-0.08, 0], [0, 1], 'clamp');
+    // [-0.001, 0] means ~0.4px of drag = gradient is completely gone
+    const gradientOpacity = interpolate(diff, [-0.001, 0], [0, 1], 'clamp');
     return { opacity: gradientOpacity };
   });
 
@@ -230,6 +230,12 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: CARD_WIDTH,
     height: CARD_HEIGHT,
+    // Shadow lives here so it fades automatically with the card's animated opacity
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.25,
+    shadowRadius: 20,
+    elevation: 8,
   },
   cardInner: {
     width: '100%',
@@ -237,11 +243,6 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     overflow: 'hidden',
     backgroundColor: '#1a1a1a',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.25,
-    shadowRadius: 20,
-    elevation: 8,
   },
   image: {
     width: '100%',

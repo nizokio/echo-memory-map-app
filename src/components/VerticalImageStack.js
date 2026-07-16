@@ -147,6 +147,17 @@ function StackCard({
     };
   });
 
+  // Gradient fades out as card flies downward off-screen
+  const gradientStyle = useAnimatedStyle(() => {
+    let diff = (index - stackProgress.value) % total;
+    if (diff > total / 2) diff -= total;
+    if (diff < -total / 2) diff += total;
+
+    // When diff < 0 card is flying away — fade gradient from 1 → 0
+    const gradientOpacity = interpolate(diff, [-0.6, 0], [0, 1], 'clamp');
+    return { opacity: gradientOpacity };
+  });
+
   return (
     <Animated.View
       style={[styles.cardWrapper, cardStyle]}
@@ -154,11 +165,13 @@ function StackCard({
     >
       <Pressable onPress={onPress} style={styles.cardInner} accessibilityRole="button">
         <Animated.Image source={{ uri: destination.image }} style={styles.image} />
-        <LinearGradient
-          colors={['transparent', 'rgba(0,0,0,0.65)']}
-          locations={[0.4, 1]}
-          style={styles.gradient}
-        />
+        <Animated.View style={[styles.gradient, gradientStyle]} pointerEvents="none">
+          <LinearGradient
+            colors={['transparent', 'rgba(0,0,0,0.65)']}
+            locations={[0.4, 1]}
+            style={StyleSheet.absoluteFill}
+          />
+        </Animated.View>
 
         {/* Favorite Heart Button */}
         {isCurrent && (

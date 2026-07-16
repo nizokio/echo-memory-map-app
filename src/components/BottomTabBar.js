@@ -9,7 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const TAB_BAR_WIDTH = 330; // Larger width
+const TAB_BAR_WIDTH = 350; // Increased horizontal length
 
 const tabs = [
   { key: 'home', icon: 'home-outline', iconActive: 'home' },

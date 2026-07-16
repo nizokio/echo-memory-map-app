@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, Text } from 'react-native';
+import { ActivityIndicator, Image, Pressable, View, StyleSheet, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import HomeScreen from './HomeScreen';
 import MapScreen from './MapScreen';
 import BottomTabBar from '../components/BottomTabBar';
 import CameraView from '../components/CameraView';
+import { useAuth } from '../features/auth/application/AuthDataProvider';
+import { useCurrentUser } from '../features/users/application/UserDataProvider';
 import { colors, typography } from '../theme';
 
 export default function MainTabsScreen({ navigation }) {
@@ -69,10 +71,56 @@ function SearchPlaceholder() {
 
 function ProfilePlaceholder() {
   const insets = useSafeAreaInsets();
+  const { error, isAuthenticated, isLoading, signInWithGoogle, signOut, user } = useAuth();
+  const { profile } = useCurrentUser();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const displayName = profile?.displayName || user?.email || 'Echo user';
+  const avatarUrl = profile?.avatarUrl;
+  const initial = displayName.charAt(0).toUpperCase();
+
+  const handleAuthAction = async (action) => {
+    setIsSubmitting(true);
+    try {
+      await action();
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <View style={[styles.placeholderContainer, { paddingTop: insets.top }]}>
-      <Text style={styles.placeholderTitle}>Your Profile</Text>
-      <Text style={styles.placeholderText}>Manage your saved locations, data settings, and credentials.</Text>
+      <View style={styles.profileAvatar}>
+        {avatarUrl ? (
+          <Image source={{ uri: avatarUrl }} style={styles.profileAvatarImage} />
+        ) : (
+          <Text style={styles.profileAvatarText}>{initial}</Text>
+        )}
+      </View>
+      <Text style={styles.placeholderTitle}>
+        {isAuthenticated ? displayName : 'Your Profile'}
+      </Text>
+      <Text style={styles.placeholderText}>
+        {isAuthenticated
+          ? user?.email || 'Signed in with Google'
+          : 'Sign in to restore sessions and prepare your private Echoes.'}
+      </Text>
+      {error ? <Text style={styles.errorText}>{error.message}</Text> : null}
+      <Pressable
+        style={[styles.authButton, (isLoading || isSubmitting) && styles.authButtonDisabled]}
+        onPress={() => handleAuthAction(isAuthenticated ? signOut : signInWithGoogle)}
+        disabled={isLoading || isSubmitting}
+        accessibilityRole="button"
+        accessibilityLabel={isAuthenticated ? 'Sign out' : 'Sign in with Google'}
+      >
+        {isLoading || isSubmitting ? (
+          <ActivityIndicator color="#fff" />
+        ) : (
+          <Text style={styles.authButtonText}>
+            {isAuthenticated ? 'Sign out' : 'Continue with Google'}
+          </Text>
+        )}
+      </Pressable>
     </View>
   );
 }
@@ -103,5 +151,48 @@ const styles = StyleSheet.create({
     color: colors.muted,
     textAlign: 'center',
     lineHeight: 18,
+    maxWidth: 280,
+  },
+  profileAvatar: {
+    width: 74,
+    height: 74,
+    borderRadius: 37,
+    backgroundColor: colors.ink,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 18,
+    overflow: 'hidden',
+  },
+  profileAvatarImage: {
+    width: '100%',
+    height: '100%',
+  },
+  profileAvatarText: {
+    ...typography.h2,
+    color: '#fff',
+  },
+  authButton: {
+    minWidth: 210,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: colors.ink,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 22,
+    paddingHorizontal: 22,
+  },
+  authButtonDisabled: {
+    opacity: 0.7,
+  },
+  authButtonText: {
+    ...typography.button,
+    color: '#fff',
+  },
+  errorText: {
+    ...typography.caption,
+    color: '#c43d3d',
+    textAlign: 'center',
+    marginTop: 14,
+    maxWidth: 280,
   },
 });

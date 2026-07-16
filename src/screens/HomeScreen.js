@@ -88,11 +88,11 @@ const styles = StyleSheet.create({
   },
   memoriesHeading: {
     ...typography.h3,
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: 28,
+    fontWeight: '800',
     color: colors.ink,
-    marginTop: 28,
-    marginBottom: 4,
+    marginTop: 36,
+    marginBottom: 12,
   },
   subtitle: {
     ...typography.caption,

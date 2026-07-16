@@ -54,12 +54,12 @@ export default function VerticalImageStack({
     })
     .onUpdate((event) => {
       // Dragging down throws the card down (positive translationY = advance index)
-      const deltaProgress = event.translationY / 250;
+      const deltaProgress = event.translationY / 400;
       stackProgress.value = startProgress.value + deltaProgress;
     })
     .onEnd((event) => {
       // Snap to nearest index based on velocity and drag position
-      const velocity = event.velocityY / 250;
+      const velocity = event.velocityY / 400;
       const targetProgress = Math.round(stackProgress.value + velocity * 0.15);
       
       stackProgress.value = withTiming(targetProgress, {
@@ -195,7 +195,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
-    marginTop: 15,
+    marginTop: 8,
   },
   ambientGlow: {
     position: 'absolute',

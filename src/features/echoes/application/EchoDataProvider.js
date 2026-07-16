@@ -1,4 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { useAuth } from '../../auth/application/AuthDataProvider';
 import { isSupabaseConfigured } from '../../../infrastructure/supabase/client';
 import { SupabaseEchoRepository } from '../data/SupabaseEchoRepository';
 
@@ -6,11 +7,20 @@ const EchoDataContext = createContext(null);
 const echoRepository = new SupabaseEchoRepository();
 
 export function EchoDataProvider({ children }) {
+  const { user, isLoading: isAuthLoading } = useAuth();
   const [echoes, setEchoes] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
   const refresh = useCallback(async () => {
+    if (isAuthLoading) return;
+    if (!user) {
+      setEchoes([]);
+      setIsLoading(false);
+      setError(null);
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
     try {
@@ -21,7 +31,7 @@ export function EchoDataProvider({ children }) {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [user, isAuthLoading]);
 
   useEffect(() => {
     refresh();

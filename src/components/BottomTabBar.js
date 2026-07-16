@@ -53,7 +53,7 @@ export default function BottomTabBar({ visible = true, activeTab = 0, onTabPress
           >
             <Ionicons
               name={isActive ? tab.iconActive : tab.icon}
-              size={24} // Larger icon size
+              size={26} // Larger icon size
               color={isActive ? '#111' : '#9a9ea6'}
             />
           </Pressable>
@@ -83,9 +83,9 @@ const styles = StyleSheet.create({
     zIndex: 60,
   },
   navItem: {
-    width: 54, // Larger button touch targets
-    height: 54,
-    borderRadius: 27,
+    width: 62, // Larger active highlight circle
+    height: 62,
+    borderRadius: 31,
     alignItems: 'center',
     justifyContent: 'center',
   },

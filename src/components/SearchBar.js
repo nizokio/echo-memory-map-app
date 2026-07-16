@@ -5,7 +5,7 @@ import { Feather } from '@expo/vector-icons';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
-  withSpring,
+  withTiming,
   useReducedMotion,
 } from 'react-native-reanimated';
 import { colors, typography } from '../theme';
@@ -21,10 +21,10 @@ export default function SearchBar() {
   }));
 
   const onFilterPressIn = () => {
-    if (!reduceMotion) filterScale.value = withSpring(0.9, { damping: 10 });
+    if (!reduceMotion) filterScale.value = withTiming(0.95, { duration: 80 });
   };
   const onFilterPressOut = () => {
-    filterScale.value = withSpring(1, { damping: 10 });
+    filterScale.value = withTiming(1, { duration: 120 });
   };
 
   return (

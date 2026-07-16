@@ -50,6 +50,9 @@ export default function HomeScreen({ navigation }) {
         {/* Search */}
         <SearchBar />
 
+        {/* Section title */}
+        <Text style={styles.memoriesHeading}>Memories</Text>
+
         {/* Vertical Image Stack */}
         <VerticalImageStack
           destinations={destinations}
@@ -80,7 +83,16 @@ const styles = StyleSheet.create({
   },
   greeting: {
     ...typography.h1,
+    fontSize: 32, // increased size
     color: colors.ink,
+  },
+  memoriesHeading: {
+    ...typography.h3,
+    fontSize: 20,
+    fontWeight: '700',
+    color: colors.ink,
+    marginTop: 28,
+    marginBottom: 4,
   },
   subtitle: {
     ...typography.caption,

@@ -14,7 +14,7 @@ import FavoriteButton from './FavoriteButton';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = SCREEN_WIDTH - 40;
-const CARD_HEIGHT = 460;
+const CARD_HEIGHT = 500;
 
 export default function VerticalImageStack({
   destinations,
@@ -190,7 +190,7 @@ function StackCard({
 
 const styles = StyleSheet.create({
   container: {
-    height: 500,
+    height: 540,
     width: '100%',
     alignItems: 'center',
     justifyContent: 'center',

@@ -38,6 +38,16 @@ export function AuthDataProvider({ children }) {
     await authRepository.signOut();
   }, []);
 
+  const signInWithGoogle = useCallback(async () => {
+    setError(null);
+    try {
+      return await authRepository.signInWithGoogle();
+    } catch (nextError) {
+      setError(nextError);
+      throw nextError;
+    }
+  }, []);
+
   const value = useMemo(
     () => ({
       session,
@@ -47,9 +57,10 @@ export function AuthDataProvider({ children }) {
       error,
       isSupabaseConfigured,
       refreshSession,
+      signInWithGoogle,
       signOut,
     }),
-    [session, isLoading, error, refreshSession, signOut]
+    [session, isLoading, error, refreshSession, signInWithGoogle, signOut]
   );
 
   return <AuthDataContext.Provider value={value}>{children}</AuthDataContext.Provider>;

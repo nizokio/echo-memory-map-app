@@ -7,6 +7,10 @@ export class AuthRepository {
     throw new Error('AuthRepository.onAuthStateChange must be implemented.');
   }
 
+  async signInWithGoogle() {
+    throw new Error('AuthRepository.signInWithGoogle must be implemented.');
+  }
+
   async signOut() {
     throw new Error('AuthRepository.signOut must be implemented.');
   }

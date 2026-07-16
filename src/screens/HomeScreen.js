@@ -51,7 +51,7 @@ export default function HomeScreen({ navigation }) {
         <SearchBar />
 
         {/* Section title */}
-        <Text style={styles.memoriesHeading}>Memories</Text>
+        <Text style={styles.memoriesHeading}>Echoes</Text>
 
         {/* Vertical Image Stack */}
         <VerticalImageStack

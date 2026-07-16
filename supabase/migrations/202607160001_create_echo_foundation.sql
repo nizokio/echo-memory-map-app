@@ -115,7 +115,7 @@ insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_typ
 values ('echo-photos', 'echo-photos', false, 10485760, array['image/jpeg', 'image/png', 'image/webp', 'image/heic'])
 on conflict (id) do nothing;
 
-create policy "Users can read their own Echo photos" on storage.objects for select to authenticated using (bucket_id = 'echo-photos' and owner_id = (select auth.uid()));
-create policy "Users can upload their own Echo photos" on storage.objects for insert to authenticated with check (bucket_id = 'echo-photos' and owner_id = (select auth.uid()));
-create policy "Users can update their own Echo photos" on storage.objects for update to authenticated using (bucket_id = 'echo-photos' and owner_id = (select auth.uid())) with check (bucket_id = 'echo-photos' and owner_id = (select auth.uid()));
-create policy "Users can delete their own Echo photos" on storage.objects for delete to authenticated using (bucket_id = 'echo-photos' and owner_id = (select auth.uid()));
+create policy "Users can read their own Echo photos" on storage.objects for select to authenticated using (bucket_id = 'echo-photos' and owner_id = (select auth.uid()::text));
+create policy "Users can upload their own Echo photos" on storage.objects for insert to authenticated with check (bucket_id = 'echo-photos' and owner_id = (select auth.uid()::text));
+create policy "Users can update their own Echo photos" on storage.objects for update to authenticated using (bucket_id = 'echo-photos' and owner_id = (select auth.uid()::text)) with check (bucket_id = 'echo-photos' and owner_id = (select auth.uid()::text));
+create policy "Users can delete their own Echo photos" on storage.objects for delete to authenticated using (bucket_id = 'echo-photos' and owner_id = (select auth.uid()::text));

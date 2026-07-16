@@ -1,9 +1,9 @@
 export const colors = {
   ink: '#212529',
-  paper: '#ffffff',
+  paper: '#f5f6f7',
   muted: '#8a8f98',
   line: '#eceef1',
-  pill: '#f2f3f5',
+  pill: '#ffffff',
   gold: '#ffb020',
   accent: '#14161a',
   heart: '#e0435b',

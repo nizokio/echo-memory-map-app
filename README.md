@@ -42,22 +42,20 @@ echo/
 │   │   ├── BottomTabBar.js   # Fixed floating bottom navigation
 │   │   ├── CategoryPill.js   # Animated category filter pill
 │   │   ├── DayAccordion.js   # Expandable day itinerary item
-│   │   ├── DestinationCard.js# Large destination card with image
+│   │   ├── EchoCard.js       # Individual memory card rendering
 │   │   ├── FavoriteButton.js # Heart toggle with spring animation
 │   │   ├── SearchBar.js      # Search input + filter button
 │   │   ├── SegmentedTabs.js  # Tab control with animated state
 │   │   ├── Toast.js          # Auto-hiding notification toast
-│   │   └── TourCard.js       # Horizontal tour card
+│   │   └── VerticalEchoStack.js # Inverted stack deck with modulo infinite scroll
 │   ├── data/                 # Mock data (swap for API later)
-│   │   ├── destinations.js   # Destinations + categories
-│   │   ├── itinerary.js      # Day-by-day itinerary
-│   │   └── tours.js          # Tour listings
+│   │   └── echoes.js         # Echoes + categories
 │   ├── navigation/
 │   │   └── AppNavigator.js   # Stack navigator with slide transitions
 │   ├── screens/
 │   │   ├── HomeScreen.js     # Home / Explore screen
 │   │   ├── DetailScreen.js   # Destination detail screen
-│   │   └── ItineraryScreen.js# Trip itinerary screen
+│   │   └── MemoryTimelineScreen.js # Timeline history screen
 │   └── theme/                # Design tokens
 │       ├── colors.js         # Color palette
 │       ├── typography.js     # Font styles
@@ -67,9 +65,9 @@ echo/
 
 ## Screens
 
-1. **Home / Explore** — Greeting, search, category pills, destination card, bottom tab bar
-2. **Destination Detail** — Hero image, bottom sheet, rating, expandable description, tour cards
-3. **Itinerary** — Header, segmented tabs, accordion day plans, sticky "Book a tour" button
+1. **Home / Explore** — Greeting, search, category pills, echoes card stack, bottom tab bar
+2. **Destination Detail** — Hero image, bottom sheet, memory counts, expandable description, echoes card list
+3. **Memory Timeline** — Header, segmented tabs, accordion memory plans, sticky "Save memory" button
 
 ## Animations
 

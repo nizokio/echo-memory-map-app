@@ -9,7 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const TAB_BAR_WIDTH = 290; // Shorter horizontal length
+const TAB_BAR_WIDTH = 315; // Increased horizontal length
 
 const tabs = [
   { key: 'home', icon: 'home-outline', iconActive: 'home' },
@@ -55,7 +55,7 @@ export default function BottomTabBar({ visible = true, activeTab = 0, onTabPress
           >
             <Ionicons
               name={isActive ? tab.iconActive : tab.icon}
-              size={isCenter ? 24 : 22} // Slightly larger icons
+              size={isCenter ? 26 : 24} // Increased size
               color={isCenter ? '#fff' : (isActive ? '#111' : '#9a9ea6')}
             />
           </Pressable>
@@ -70,13 +70,13 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: (SCREEN_WIDTH - TAB_BAR_WIDTH) / 2,
     width: TAB_BAR_WIDTH,
-    bottom: 20,
-    height: 70, // Slightly bigger height
+    bottom: 28, // Shifted up
+    height: 78, // Increased size
     backgroundColor: colors.ink,
-    borderRadius: 35,
+    borderRadius: 39,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-evenly', // Brings icons closer together
+    justifyContent: 'space-evenly',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 16 },
     shadowOpacity: 0.5,
@@ -85,9 +85,9 @@ const styles = StyleSheet.create({
     zIndex: 60,
   },
   navItem: {
-    width: 46, // Slightly bigger touch targets
-    height: 46,
-    borderRadius: 23,
+    width: 50, // Increased touch targets
+    height: 50,
+    borderRadius: 25,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -96,9 +96,9 @@ const styles = StyleSheet.create({
   },
   centerNavItem: {
     backgroundColor: '#ff7a4d', // primary solid orange accent
-    width: 50, // Slightly bigger center button
-    height: 50,
-    borderRadius: 25,
+    width: 56, // Increased center button
+    height: 56,
+    borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#ff7a4d',

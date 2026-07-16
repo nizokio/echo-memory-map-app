@@ -264,7 +264,7 @@ const styles = StyleSheet.create({
   recenterBtnWrapper: {
     position: 'absolute',
     right: 20,
-    bottom: 96, // Floated nicely above bottom navigation (64 height + padding)
+    bottom: 120, // Floated nicely above bottom navigation
     zIndex: 20,
   },
   recenterBtn: {
@@ -289,7 +289,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: '50%',
     transform: [{ translateX: -70 }], // (140 width / 2) to center it
-    bottom: 96,
+    bottom: 120,
     width: 140,
     zIndex: 20,
   },
@@ -316,7 +316,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 20,
     right: 20,
-    bottom: 96,
+    bottom: 120,
     zIndex: 40,
   },
   sheetInner: {

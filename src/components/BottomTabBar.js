@@ -16,7 +16,7 @@ const tabs = [
   { key: 'map', icon: 'navigate-outline', iconActive: 'navigate' },
   { key: 'camera', icon: 'camera-outline', iconActive: 'camera' }, // Treated as normal tab
   { key: 'search', icon: 'search-outline', iconActive: 'search' },
-  { key: 'profile', icon: 'person-outline', iconActive: 'person' },
+  { key: 'settings', icon: 'settings-outline', iconActive: 'settings' },
 ];
 
 export default function BottomTabBar({ visible = true, activeTab = 0, onTabPress }) {

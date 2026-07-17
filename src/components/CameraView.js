@@ -1,30 +1,22 @@
-import React, { useState, useEffect } from 'react';
-import { ActivityIndicator, Image, TextInput, View, Text, StyleSheet, Pressable, Dimensions } from 'react-native';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-  runOnJS,
-} from 'react-native-reanimated';
+import React, { useState } from 'react';
+import { ActivityIndicator, Image, TextInput, View, Text, StyleSheet, Pressable } from 'react-native';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import Toast from './Toast';
+import { useAuth } from '../features/auth/application/AuthDataProvider';
 import { SupabaseEchoRepository } from '../features/echoes/data/SupabaseEchoRepository';
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const echoRepository = new SupabaseEchoRepository();
 
 export default function CameraView({ visible, onClose, onEchoSaved }) {
+  const { isAuthenticated } = useAuth();
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [draft, setDraft] = useState(null);
   const [note, setNote] = useState('');
   const [isCapturing, setIsCapturing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-
-  const shutterOpacity = useSharedValue(0);
-  const shutterScale = useSharedValue(1);
 
   // Close camera with timing
   const handleClose = () => {
@@ -37,20 +29,6 @@ export default function CameraView({ visible, onClose, onEchoSaved }) {
     setNote('');
     setIsCapturing(false);
     setIsSaving(false);
-  };
-
-  // Timed Shutter Snap Animation
-  const triggerShutterAnimation = (onComplete) => {
-    shutterScale.value = withTiming(0.9, { duration: 60 }, () => {
-      shutterScale.value = withTiming(1, { duration: 100 });
-    });
-
-    // Flash/Shutter screen black overlay animation (ease-out snap, 150ms total)
-    shutterOpacity.value = withTiming(1, { duration: 40 }, () => {
-      shutterOpacity.value = withTiming(0, { duration: 120 }, () => {
-        if (onComplete) runOnJS(onComplete)();
-      });
-    });
   };
 
   const showToast = (message) => {
@@ -112,16 +90,12 @@ export default function CameraView({ visible, onClose, onEchoSaved }) {
     }
   };
 
-  const handleCapturePress = () => {
-    triggerShutterAnimation(() => captureDraft('camera'));
-  };
-
-  const handleGalleryPress = () => {
-    captureDraft('library');
-  };
-
   const saveDraft = async () => {
     if (!draft || isSaving) return;
+    if (!isAuthenticated) {
+      showToast('Sign in from Profile first.');
+      return;
+    }
 
     setIsSaving(true);
     try {
@@ -137,19 +111,15 @@ export default function CameraView({ visible, onClose, onEchoSaved }) {
       onClose?.();
     } catch (error) {
       console.warn('Echo save failed:', error);
-      showToast(error.message || 'Unable to save Echo.');
+      const message =
+        error.name === 'AuthSessionMissingError'
+          ? 'Sign in from Profile first.'
+          : error.message || 'Unable to save Echo.';
+      showToast(message);
     } finally {
       setIsSaving(false);
     }
   };
-
-  const shutterFlashStyle = useAnimatedStyle(() => ({
-    opacity: shutterOpacity.value,
-  }));
-
-  const shutterBtnStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: shutterScale.value }],
-  }));
 
   if (!visible) return null;
 
@@ -197,61 +167,76 @@ export default function CameraView({ visible, onClose, onEchoSaved }) {
                 <Ionicons name="camera-outline" size={42} color="rgba(255,255,255,0.82)" />
                 <Text style={styles.capturePromptTitle}>Capture a place memory</Text>
                 <Text style={styles.capturePromptText}>Take a photo or choose one from your library.</Text>
+                <View style={styles.captureActions}>
+                  <Pressable
+                    onPress={() => captureDraft('camera')}
+                    style={[styles.primaryAction, isCapturing && styles.disabledControl]}
+                    disabled={isCapturing}
+                    accessibilityLabel="Take a new photo"
+                    accessibilityRole="button"
+                  >
+                    {isCapturing ? (
+                      <ActivityIndicator color="#000" />
+                    ) : (
+                      <>
+                        <Ionicons name="camera" size={20} color="#000" />
+                        <Text style={styles.primaryActionText}>Take Photo</Text>
+                      </>
+                    )}
+                  </Pressable>
+                  <Pressable
+                    onPress={() => captureDraft('library')}
+                    style={[styles.secondaryAction, isCapturing && styles.disabledControl]}
+                    disabled={isCapturing}
+                    accessibilityLabel="Choose photo from library"
+                    accessibilityRole="button"
+                  >
+                    <Ionicons name="images-outline" size={20} color="#fff" />
+                    <Text style={styles.secondaryActionText}>Choose Photo</Text>
+                  </Pressable>
+                </View>
               </View>
             </>
           )}
         </View>
 
-        {/* Bottom Controls / Letterbox */}
-        <View style={styles.bottomBar}>
-          {/* Left: Gallery Thumbnail */}
-          <Pressable
-            onPress={draft ? resetDraft : handleGalleryPress}
-            style={styles.galleryThumb}
-            accessibilityLabel={draft ? 'Retake Echo photo' : 'Choose photo from library'}
-            accessibilityRole="button"
-          >
-            <View style={styles.galleryInner} />
-          </Pressable>
-
-          {/* Center: Shutter Button */}
-          <Animated.View style={shutterBtnStyle}>
+        {draft ? (
+          <View style={styles.bottomBar}>
             <Pressable
-              onPress={draft ? saveDraft : handleCapturePress}
-              style={[
-                draft ? styles.saveButton : styles.shutterOuter,
-                (isCapturing || isSaving) && styles.disabledControl,
-              ]}
+              onPress={() => captureDraft('camera')}
+              style={styles.draftAction}
               disabled={isCapturing || isSaving}
-              accessibilityLabel={draft ? 'Save Echo' : 'Capture photo'}
+              accessibilityLabel="Retake photo"
               accessibilityRole="button"
             >
-              {isCapturing || isSaving ? (
-                <ActivityIndicator color={draft ? '#000' : '#fff'} />
-              ) : draft ? (
-                <Text style={styles.saveButtonText}>Save</Text>
+              <Ionicons name="camera-outline" size={22} color="#fff" />
+              <Text style={styles.draftActionText}>Retake</Text>
+            </Pressable>
+            <Pressable
+              onPress={saveDraft}
+              style={[styles.saveButton, isSaving && styles.disabledControl]}
+              disabled={isCapturing || isSaving}
+              accessibilityLabel="Save Echo"
+              accessibilityRole="button"
+            >
+              {isSaving ? (
+                <ActivityIndicator color="#000" />
               ) : (
-                <View style={styles.shutterInner} />
+                <Text style={styles.saveButtonText}>Save</Text>
               )}
             </Pressable>
-          </Animated.View>
-
-          {/* Right: Camera Flip Icon */}
-          <Pressable
-            style={styles.flipBtn}
-            onPress={draft ? resetDraft : undefined}
-            accessibilityLabel={draft ? 'Discard draft' : 'Flip camera'}
-            accessibilityRole="button"
-          >
-            <Ionicons name={draft ? 'trash-outline' : 'camera-reverse-outline'} size={24} color="#fff" />
-          </Pressable>
-        </View>
-
-        {/* Shutter Snap Flash Black Overlay */}
-        <Animated.View
-          pointerEvents="none"
-          style={[StyleSheet.absoluteFillObject, styles.shutterOverlay, shutterFlashStyle]}
-        />
+            <Pressable
+              style={styles.draftAction}
+              onPress={resetDraft}
+              disabled={isSaving}
+              accessibilityLabel="Discard draft"
+              accessibilityRole="button"
+            >
+              <Ionicons name="trash-outline" size={22} color="#fff" />
+              <Text style={styles.draftActionText}>Discard</Text>
+            </Pressable>
+          </View>
+        ) : null}
 
         {/* Echo Saved Success Toast */}
         <Toast
@@ -324,28 +309,48 @@ const styles = StyleSheet.create({
     marginTop: 8,
     textAlign: 'center',
   },
+  captureActions: {
+    width: '100%',
+    gap: 12,
+    marginTop: 28,
+  },
+  primaryAction: {
+    height: 56,
+    borderRadius: 18,
+    backgroundColor: '#fff',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+  },
+  primaryActionText: {
+    color: '#000',
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  secondaryAction: {
+    height: 54,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.24)',
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+  },
+  secondaryActionText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '800',
+  },
   bottomBar: {
-    height: 140,
+    height: 116,
     backgroundColor: 'rgba(0,0,0,0.95)',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-around',
     paddingBottom: 20,
-  },
-  shutterOuter: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    borderWidth: 4,
-    borderColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  shutterInner: {
-    width: 54,
-    height: 54,
-    borderRadius: 27,
-    backgroundColor: '#fff',
   },
   saveButton: {
     minWidth: 96,
@@ -364,29 +369,17 @@ const styles = StyleSheet.create({
   disabledControl: {
     opacity: 0.7,
   },
-  galleryThumb: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
-    borderWidth: 1.5,
-    borderColor: '#fff',
-    overflow: 'hidden',
-    backgroundColor: '#333',
-  },
-  galleryInner: {
-    width: '100%',
-    height: '100%',
-    opacity: 0.6,
-  },
-  flipBtn: {
-    width: 44,
-    height: 44,
+  draftAction: {
+    minWidth: 76,
+    height: 54,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  shutterOverlay: {
-    backgroundColor: '#000',
-    zIndex: 110,
+  draftActionText: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 11,
+    fontWeight: '700',
+    marginTop: 4,
   },
   draftPanel: {
     flex: 1,

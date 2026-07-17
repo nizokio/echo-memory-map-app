@@ -46,7 +46,7 @@ export default function BottomTabBar({ visible = true, activeTab = 0, onTabPress
         },
       ],
     };
-  }, [visible]);
+  }, [expanded, reduceMotion, visible]);
 
   const activeTabItem = tabs[activeTab] || tabs[0];
 
@@ -94,6 +94,7 @@ const styles = StyleSheet.create({
     height: 64,
     backgroundColor: colors.ink,
     borderRadius: 32,
+    overflow: 'hidden',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-evenly',

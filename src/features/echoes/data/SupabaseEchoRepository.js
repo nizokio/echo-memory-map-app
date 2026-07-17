@@ -76,23 +76,28 @@ export class SupabaseEchoRepository extends EchoRepository {
 
     if (echoError) throw echoError;
 
-    const storagePath = await this.uploadEchoPhoto({
-      userId: userData.user.id,
-      echoId: echo.id,
-      photo,
-    });
+    try {
+      const storagePath = await this.uploadEchoPhoto({
+        userId: userData.user.id,
+        echoId: echo.id,
+        photo,
+      });
 
-    const { error: photoError } = await supabase.from('echo_photos').insert({
-      echo_id: echo.id,
-      storage_path: storagePath,
-      width: photo.width || null,
-      height: photo.height || null,
-      sort_order: 0,
-      captured_at: capturedAt,
-    });
+      const { error: photoError } = await supabase.from('echo_photos').insert({
+        echo_id: echo.id,
+        storage_path: storagePath,
+        width: photo.width || null,
+        height: photo.height || null,
+        sort_order: 0,
+        captured_at: capturedAt,
+      });
 
-    if (photoError) throw photoError;
-    return echo.id;
+      if (photoError) throw photoError;
+      return echo.id;
+    } catch (error) {
+      await supabase.from('echoes').delete().eq('id', echo.id);
+      throw error;
+    }
   }
 
   async uploadEchoPhoto({ userId, echoId, photo }) {
@@ -102,7 +107,7 @@ export class SupabaseEchoRepository extends EchoRepository {
     const fileData = await response.arrayBuffer();
 
     const { error } = await supabase.storage.from(PHOTO_BUCKET).upload(storagePath, fileData, {
-      contentType: photo.mimeType || `image/${fileExtension}`,
+      contentType: this.getPhotoContentType(photo, fileExtension),
       upsert: false,
     });
 
@@ -118,5 +123,11 @@ export class SupabaseEchoRepository extends EchoRepository {
     if (fromMime) return fromMime === 'jpg' ? 'jpeg' : fromMime;
 
     return 'jpeg';
+  }
+
+  getPhotoContentType(photo, fileExtension) {
+    if (photo.mimeType) return photo.mimeType;
+    if (fileExtension === 'jpg' || fileExtension === 'jpeg') return 'image/jpeg';
+    return `image/${fileExtension}`;
   }
 }

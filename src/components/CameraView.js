@@ -18,9 +18,6 @@ const echoRepository = new SupabaseEchoRepository();
 export default function CameraView({ visible, onClose, onEchoSaved }) {
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
-  const [flashMode, setFlashMode] = useState('off'); // off, on, auto
-  const [aspectRatio, setAspectRatio] = useState('4:3');
-  const [hdrEnabled, setHdrEnabled] = useState(false);
   const [draft, setDraft] = useState(null);
   const [note, setNote] = useState('');
   const [isCapturing, setIsCapturing] = useState(false);
@@ -40,20 +37,6 @@ export default function CameraView({ visible, onClose, onEchoSaved }) {
     setNote('');
     setIsCapturing(false);
     setIsSaving(false);
-  };
-
-  const toggleFlash = () => {
-    if (flashMode === 'off') setFlashMode('on');
-    else if (flashMode === 'on') setFlashMode('auto');
-    else setFlashMode('off');
-  };
-
-  const toggleHdr = () => {
-    setHdrEnabled(!hdrEnabled);
-  };
-
-  const toggleAspect = () => {
-    setAspectRatio((prev) => (prev === '4:3' ? '16:9' : '4:3'));
   };
 
   // Timed Shutter Snap Animation
@@ -98,7 +81,7 @@ export default function CameraView({ visible, onClose, onEchoSaved }) {
       const result = await picker({
         allowsEditing: false,
         quality: 0.85,
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ['images'],
       });
 
       if (result.canceled || !result.assets?.[0]) return;
@@ -153,6 +136,7 @@ export default function CameraView({ visible, onClose, onEchoSaved }) {
       onEchoSaved?.();
       onClose?.();
     } catch (error) {
+      console.warn('Echo save failed:', error);
       showToast(error.message || 'Unable to save Echo.');
     } finally {
       setIsSaving(false);
@@ -179,21 +163,7 @@ export default function CameraView({ visible, onClose, onEchoSaved }) {
           </Pressable>
 
           <View style={styles.topActions}>
-            <Pressable onPress={toggleFlash} style={styles.iconBtn} accessibilityLabel="Toggle flash" accessibilityRole="button">
-              <Ionicons
-                name={flashMode === 'on' ? 'flash' : flashMode === 'auto' ? 'flash-outline' : 'flash-off'}
-                size={18}
-                color={flashMode !== 'off' ? '#ff7a4d' : '#fff'}
-              />
-            </Pressable>
-
-            <Pressable onPress={toggleAspect} style={styles.textBtn} accessibilityLabel="Toggle ratio" accessibilityRole="button">
-              <Text style={styles.btnText}>{aspectRatio}</Text>
-            </Pressable>
-
-            <Pressable onPress={toggleHdr} style={styles.textBtn} accessibilityLabel="Toggle HDR" accessibilityRole="button">
-              <Text style={[styles.btnText, hdrEnabled && styles.activeBtnText]}>HDR</Text>
-            </Pressable>
+            <Text style={styles.captureTitle}>{draft ? 'Review Echo' : 'New Echo'}</Text>
           </View>
 
           <View style={{ width: 40 }} />
@@ -223,14 +193,11 @@ export default function CameraView({ visible, onClose, onEchoSaved }) {
             </View>
           ) : (
             <>
-              {/* Subtle Grid Rule of Thirds Overlay */}
-              <View style={styles.gridLineV1} />
-              <View style={styles.gridLineV2} />
-              <View style={styles.gridLineH1} />
-              <View style={styles.gridLineH2} />
-
-              {/* Focal center indicator */}
-              <View style={styles.focalBox} />
+              <View style={styles.capturePrompt}>
+                <Ionicons name="camera-outline" size={42} color="rgba(255,255,255,0.82)" />
+                <Text style={styles.capturePromptTitle}>Capture a place memory</Text>
+                <Text style={styles.capturePromptText}>Take a photo or choose one from your library.</Text>
+              </View>
             </>
           )}
         </View>
@@ -319,23 +286,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 24,
   },
+  captureTitle: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '800',
+  },
   iconBtn: {
     width: 40,
     height: 40,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  textBtn: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  btnText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  activeBtnText: {
-    color: '#ff7a4d',
   },
   viewfinder: {
     flex: 1,
@@ -344,49 +304,25 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#1a1b1e',
   },
-  gridLineV1: {
-    position: 'absolute',
-    left: '33.3%',
-    top: 0,
-    bottom: 0,
-    width: 0.5,
-    backgroundColor: 'rgba(255,255,255,0.15)',
+  capturePrompt: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 34,
   },
-  gridLineV2: {
-    position: 'absolute',
-    left: '66.6%',
-    top: 0,
-    bottom: 0,
-    width: 0.5,
-    backgroundColor: 'rgba(255,255,255,0.15)',
+  capturePromptTitle: {
+    color: '#fff',
+    fontSize: 22,
+    fontWeight: '800',
+    marginTop: 16,
+    textAlign: 'center',
   },
-  gridLineH1: {
-    position: 'absolute',
-    top: '33.3%',
-    left: 0,
-    right: 0,
-    height: 0.5,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-  },
-  gridLineH2: {
-    position: 'absolute',
-    top: '66.6%',
-    left: 0,
-    right: 0,
-    height: 0.5,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-  },
-  focalBox: {
-    position: 'absolute',
-    left: '50%',
-    top: '50%',
-    width: 44,
-    height: 44,
-    marginLeft: -22,
-    marginTop: -22,
-    borderWidth: 0.5,
-    borderColor: 'rgba(255,255,255,0.25)',
-    borderRadius: 6,
+  capturePromptText: {
+    color: 'rgba(255,255,255,0.62)',
+    fontSize: 13,
+    lineHeight: 18,
+    marginTop: 8,
+    textAlign: 'center',
   },
   bottomBar: {
     height: 140,

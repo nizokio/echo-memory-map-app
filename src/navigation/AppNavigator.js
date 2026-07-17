@@ -6,6 +6,7 @@ import {
 } from '@react-navigation/stack';
 
 import MainTabsScreen from '../screens/MainTabsScreen';
+import AlbumScreen from '../screens/AlbumScreen';
 import DetailScreen from '../screens/DetailScreen';
 import MemoryTimelineScreen from '../screens/MemoryTimelineScreen';
 
@@ -23,6 +24,7 @@ export default function AppNavigator() {
         }}
       >
         <Stack.Screen name="Home" component={MainTabsScreen} />
+        <Stack.Screen name="Album" component={AlbumScreen} />
         <Stack.Screen name="Detail" component={DetailScreen} />
         <Stack.Screen name="MemoryTimeline" component={MemoryTimelineScreen} />
       </Stack.Navigator>

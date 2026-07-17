@@ -7,6 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, typography } from '../theme';
 import { useEchoes } from '../features/echoes/application/EchoDataProvider';
 import { useCurrentUser } from '../features/users/application/UserDataProvider';
+import { buildMemoryAlbums, formatMemoryDate, getMemoryTitle } from '../domain/echo/memoryAlbums';
 import SearchBar from '../components/SearchBar';
 
 const NEARBY_RADIUS_METERS = 1000;
@@ -21,7 +22,7 @@ export default function HomeScreen({ navigation, onProfilePress }) {
   const handlePressCard = useCallback((echo) => navigation.navigate('Detail', { echo }), [navigation]);
   const greeting = profile?.displayName ? `Hello, ${profile.displayName}` : 'Hello';
   const avatarInitial = profile?.displayName?.charAt(0).toUpperCase() || 'E';
-  const albums = buildAlbums(echoes);
+  const albums = buildMemoryAlbums(echoes);
   const selectedAlbum = albums.find((album) => album.key === selectedAlbumKey) || albums[0];
   const featuredMemory = echoes[0];
 
@@ -55,7 +56,7 @@ export default function HomeScreen({ navigation, onProfilePress }) {
             <View style={styles.featuredCopy}>
               <Text style={styles.featuredLabel}>Continue remembering</Text>
               <Text style={styles.featuredTitle} numberOfLines={2}>{getMemoryTitle(featuredMemory)}</Text>
-              <Text style={styles.featuredMeta}>{formatMemoryTime(featuredMemory.capturedAt)} - {featuredMemory.photos.length} photo{featuredMemory.photos.length === 1 ? '' : 's'}</Text>
+              <Text style={styles.featuredMeta}>{formatMemoryDate(featuredMemory.capturedAt)} - {featuredMemory.photos.length} photo{featuredMemory.photos.length === 1 ? '' : 's'}</Text>
             </View>
           </Pressable>
         ) : (
@@ -74,7 +75,10 @@ export default function HomeScreen({ navigation, onProfilePress }) {
           {albums.map((album) => (
             <Pressable
               key={album.key}
-              onPress={() => setSelectedAlbumKey(album.key)}
+              onPress={() => {
+                setSelectedAlbumKey(album.key);
+                navigation.navigate('Album', { albumKey: album.key });
+              }}
               style={[styles.albumCard, selectedAlbum?.key === album.key && styles.albumCardActive]}
               accessibilityRole="button"
             >
@@ -156,7 +160,9 @@ export default function HomeScreen({ navigation, onProfilePress }) {
 
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>{selectedAlbum?.title || 'Recently Added'}</Text>
-          <Text style={styles.sectionMeta}>{selectedAlbum?.items.length || 0} memories</Text>
+          <Pressable onPress={() => navigation.navigate('Album', { albumKey: selectedAlbum?.key || 'recent' })} accessibilityRole="button">
+            <Text style={styles.sectionMeta}>{selectedAlbum?.items.length || 0} memories</Text>
+          </Pressable>
         </View>
         {selectedAlbum?.items.length ? (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.memoryList}>
@@ -170,27 +176,6 @@ export default function HomeScreen({ navigation, onProfilePress }) {
       </ScrollView>
     </View>
   );
-}
-
-function buildAlbums(echoes) {
-  const now = new Date();
-  const weekStart = new Date(now);
-  weekStart.setDate(now.getDate() - 7);
-
-  const thisWeek = echoes.filter((echo) => new Date(echo.capturedAt) >= weekStart);
-  const withPlaces = echoes.filter((echo) => echo.location?.latitude && echo.location?.longitude);
-  const withMedia = echoes.filter((echo) => echo.photos.length > 0);
-
-  return [
-    { key: 'recent', title: 'Recent', icon: 'time-outline', items: echoes },
-    { key: 'week', title: 'This Week', icon: 'calendar-outline', items: thisWeek },
-    { key: 'places', title: 'Places', icon: 'map-outline', items: withPlaces },
-    { key: 'media', title: 'Media', icon: 'images-outline', items: withMedia },
-  ];
-}
-
-function getMemoryTitle(echo) {
-  return echo.note?.trim() || echo.aiMetadata?.title || echo.location?.name || 'Saved memory';
 }
 
 function getDistanceMeters(left, right) {
@@ -237,7 +222,7 @@ function MemoryPreviewCard({ echo, onPress }) {
     <Pressable onPress={onPress} style={styles.memoryCard} accessibilityRole="button">
       {photoUri ? <Image source={{ uri: photoUri }} style={styles.memoryImage} /> : <View style={styles.memoryImageFallback} />}
       <Text style={styles.memoryTitle} numberOfLines={2}>{getMemoryTitle(echo)}</Text>
-      <Text style={styles.memoryMeta} numberOfLines={1}>{formatMemoryTime(echo.capturedAt)}</Text>
+      <Text style={styles.memoryMeta} numberOfLines={1}>{formatMemoryDate(echo.capturedAt)}</Text>
     </Pressable>
   );
 }
@@ -250,15 +235,6 @@ function formatNearbyTime(value) {
     day: 'numeric',
     hour: 'numeric',
     minute: '2-digit',
-  }).format(new Date(value));
-}
-
-function formatMemoryTime(value) {
-  if (!value) return 'Unknown time';
-
-  return new Intl.DateTimeFormat('en', {
-    month: 'short',
-    day: 'numeric',
   }).format(new Date(value));
 }
 

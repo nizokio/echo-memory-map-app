@@ -1,6 +1,9 @@
 const toDateOrNull = (value) => (value ? new Date(value).toISOString() : null);
+const firstRelation = (value) => (Array.isArray(value) ? value[0] : value);
 
 export function mapEchoRecord(record, photoUrls = new Map()) {
+  const aiMetadata = firstRelation(record.echo_ai_metadata);
+
   const photos = [...(record.echo_photos || [])]
     .sort((left, right) => left.sort_order - right.sort_order)
     .map((photo) => ({
@@ -29,11 +32,11 @@ export function mapEchoRecord(record, photoUrls = new Map()) {
     visibility: record.visibility,
     tags: (record.echo_tags || []).map((entry) => entry.tag?.name).filter(Boolean),
     photos,
-    aiMetadata: record.echo_ai_metadata
+    aiMetadata: aiMetadata
       ? {
-          title: record.echo_ai_metadata.title,
-          summary: record.echo_ai_metadata.summary,
-          caption: record.echo_ai_metadata.caption,
+          title: aiMetadata.title,
+          summary: aiMetadata.summary,
+          caption: aiMetadata.caption,
         }
       : null,
   };

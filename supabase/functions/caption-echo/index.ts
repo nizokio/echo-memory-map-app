@@ -34,7 +34,8 @@ Deno.serve(async (request) => {
 
     if (echoError) throw echoError;
     if (!echo) return json({ error: 'Echo not found.' }, 404);
-    if (echo.echo_ai_metadata?.caption) return json({ status: 'already_captioned', caption: echo.echo_ai_metadata.caption });
+    const existingMetadata = Array.isArray(echo.echo_ai_metadata) ? echo.echo_ai_metadata[0] : echo.echo_ai_metadata;
+    if (existingMetadata?.caption) return json({ status: 'already_captioned', caption: existingMetadata.caption });
 
     const { data: photo, error: photoError } = await admin
       .from('echo_photos')

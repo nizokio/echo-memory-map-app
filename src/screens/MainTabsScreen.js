@@ -6,12 +6,14 @@ import MapScreen from './MapScreen';
 import BottomTabBar from '../components/BottomTabBar';
 import CameraView from '../components/CameraView';
 import { useAuth } from '../features/auth/application/AuthDataProvider';
+import { useEchoes } from '../features/echoes/application/EchoDataProvider';
 import { useCurrentUser } from '../features/users/application/UserDataProvider';
 import { colors, typography } from '../theme';
 
 export default function MainTabsScreen({ navigation }) {
   const [activeTab, setActiveTab] = useState(0);
   const [cameraVisible, setCameraVisible] = useState(false);
+  const { refresh } = useEchoes();
 
   const renderContent = () => {
     switch (activeTab) {
@@ -54,6 +56,7 @@ export default function MainTabsScreen({ navigation }) {
       <CameraView
         visible={cameraVisible}
         onClose={() => setCameraVisible(false)}
+        onEchoSaved={refresh}
       />
     </View>
   );

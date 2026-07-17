@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ActivityIndicator, Alert, Image, View, Text, ScrollView, Pressable, StyleSheet, Dimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import Animated, { useSharedValue, useAnimatedScrollHandler, useAnimatedStyle, interpolate, useReducedMotion } from 'react-native-reanimated';
 import { colors, typography } from '../theme';
 import { getRelatedEchoes } from '../domain/echo/echoRelations';
@@ -18,6 +19,7 @@ const echoRepository = new SupabaseEchoRepository();
 export default function DetailScreen({ navigation, route }) {
   const insets = useSafeAreaInsets();
   const [expanded, setExpanded] = useState(false);
+  const [isAddingPhotos, setIsAddingPhotos] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const { echoes, refresh } = useEchoes();
   const routeEcho = route.params?.echo;
@@ -42,6 +44,40 @@ export default function DetailScreen({ navigation, route }) {
       Alert.alert('Unable to delete Echo', error.message || 'Please try again.');
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const addPhotos = async () => {
+    if (!echo?.id || isAddingPhotos) return;
+
+    setIsAddingPhotos(true);
+    try {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permission.granted) {
+        Alert.alert('Photo access needed', 'Allow photo access to add more photos to this memory.');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        allowsEditing: false,
+        allowsMultipleSelection: true,
+        selectionLimit: 8,
+        quality: 0.85,
+        mediaTypes: ['images'],
+      });
+
+      if (result.canceled || !result.assets?.length) return;
+
+      await echoRepository.addPhotosToEcho({
+        echoId: echo.id,
+        photos: result.assets.slice(0, 8),
+        capturedAt: new Date().toISOString(),
+      });
+      await refresh();
+    } catch (error) {
+      Alert.alert('Unable to add photos', error.message || 'Please try again.');
+    } finally {
+      setIsAddingPhotos(false);
     }
   };
 
@@ -72,6 +108,22 @@ export default function DetailScreen({ navigation, route }) {
               ))}
             </ScrollView>
           ) : null}
+          <Pressable
+            onPress={addPhotos}
+            disabled={isAddingPhotos}
+            style={[styles.addPhotosButton, isAddingPhotos && styles.disabled]}
+            accessibilityRole="button"
+            accessibilityLabel="Add photos to memory"
+          >
+            {isAddingPhotos ? (
+              <ActivityIndicator color={colors.ink} />
+            ) : (
+              <>
+                <Feather name="plus" size={16} color={colors.ink} />
+                <Text style={styles.addPhotosText}>Add Photos</Text>
+              </>
+            )}
+          </Pressable>
           <Text style={styles.desc}>{expanded ? echo?.note : (echo?.aiMetadata?.summary || echo?.note)}</Text>
           <Pressable onPress={() => setExpanded(!expanded)}><Text style={styles.readMore}>{expanded ? 'Read less' : 'Read more'}</Text></Pressable>
           <View style={styles.memoryMeta}>
@@ -131,6 +183,7 @@ const styles = StyleSheet.create({
   locRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }, locDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.locDot }, locText: { ...typography.caption, color: colors.muted },
   rateBox: { alignItems: 'flex-end', maxWidth: 115 }, stars: { color: colors.gold, fontSize: 14, fontWeight: '700' }, reviews: { ...typography.label, color: colors.muted, textDecorationLine: 'underline', marginTop: 2, textAlign: 'right' },
   photoGallery: { marginTop: 18, marginHorizontal: -20 }, photoGalleryContent: { paddingLeft: 20, paddingRight: 6 }, galleryImage: { width: 104, height: 104, borderRadius: 18, marginRight: 10, backgroundColor: colors.pill },
+  addPhotosButton: { height: 46, borderRadius: 18, backgroundColor: '#fff', borderWidth: 1, borderColor: colors.line, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 16 }, addPhotosText: { ...typography.button, color: colors.ink },
   desc: { ...typography.bodySmall, color: colors.descText, lineHeight: 21, marginTop: 16 }, readMore: { ...typography.caption, fontWeight: '700', color: colors.ink, marginTop: 4 },
   memoryMeta: { marginTop: 18, padding: 14, borderRadius: 18, backgroundColor: '#fff', borderWidth: 1, borderColor: colors.line }, metaLabel: { ...typography.label, color: colors.muted, textTransform: 'uppercase' }, metaValue: { ...typography.bodySmall, color: colors.ink, marginTop: 4 },
   deleteButton: { height: 46, borderRadius: 18, borderWidth: 1, borderColor: 'rgba(168,74,58,0.25)', backgroundColor: '#fff', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 12 }, deleteText: { ...typography.button, color: '#A84A3A' }, disabled: { opacity: 0.6 },

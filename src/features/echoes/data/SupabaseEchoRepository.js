@@ -124,6 +124,59 @@ export class SupabaseEchoRepository extends EchoRepository {
     if (error) throw error;
   }
 
+  async addPhotosToEcho({ echoId, photos, capturedAt }) {
+    if (!isSupabaseConfigured || !supabase) throw new Error('Supabase is not configured.');
+    if (!photos?.length) throw new Error('Choose at least one photo.');
+
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    if (userError) throw userError;
+    if (!userData.user) throw new Error('Sign in before adding photos.');
+
+    const { data: existingPhotos, error: existingError } = await supabase
+      .from('echo_photos')
+      .select('sort_order')
+      .eq('echo_id', echoId)
+      .order('sort_order', { ascending: false })
+      .limit(1);
+
+    if (existingError) throw existingError;
+
+    const startIndex = (existingPhotos?.[0]?.sort_order ?? -1) + 1;
+    const uploadedPaths = [];
+
+    try {
+      const uploadedPhotos = [];
+      for (let index = 0; index < photos.length; index += 1) {
+        const nextPhoto = photos[index];
+        const sortOrder = startIndex + index;
+        const storagePath = await this.uploadEchoPhoto({
+          userId: userData.user.id,
+          echoId,
+          photo: nextPhoto,
+          index: sortOrder,
+        });
+        uploadedPaths.push(storagePath);
+
+        uploadedPhotos.push({
+          echo_id: echoId,
+          storage_path: storagePath,
+          width: nextPhoto.width || null,
+          height: nextPhoto.height || null,
+          sort_order: sortOrder,
+          captured_at: capturedAt,
+        });
+      }
+
+      const { error: photoError } = await supabase.from('echo_photos').insert(uploadedPhotos);
+      if (photoError) throw photoError;
+    } catch (error) {
+      if (uploadedPaths.length > 0) {
+        await supabase.storage.from(PHOTO_BUCKET).remove(uploadedPaths);
+      }
+      throw error;
+    }
+  }
+
   async deleteEcho(echoId) {
     if (!isSupabaseConfigured || !supabase) throw new Error('Supabase is not configured.');
 

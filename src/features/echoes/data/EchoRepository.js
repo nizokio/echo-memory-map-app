@@ -6,4 +6,8 @@ export class EchoRepository {
   async createEcho() {
     throw new Error('EchoRepository.createEcho must be implemented.');
   }
+
+  async deleteEcho() {
+    throw new Error('EchoRepository.deleteEcho must be implemented.');
+  }
 }

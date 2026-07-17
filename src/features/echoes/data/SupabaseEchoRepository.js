@@ -110,6 +110,26 @@ export class SupabaseEchoRepository extends EchoRepository {
     if (error) throw error;
   }
 
+  async deleteEcho(echoId) {
+    if (!isSupabaseConfigured || !supabase) throw new Error('Supabase is not configured.');
+
+    const { data: photos, error: photoError } = await supabase
+      .from('echo_photos')
+      .select('storage_path')
+      .eq('echo_id', echoId);
+
+    if (photoError) throw photoError;
+
+    const paths = (photos || []).map((photo) => photo.storage_path).filter(Boolean);
+    if (paths.length > 0) {
+      const { error: storageError } = await supabase.storage.from(PHOTO_BUCKET).remove(paths);
+      if (storageError) throw storageError;
+    }
+
+    const { error } = await supabase.from('echoes').delete().eq('id', echoId);
+    if (error) throw error;
+  }
+
   async uploadEchoPhoto({ userId, echoId, photo }) {
     const fileExtension = this.getPhotoExtension(photo);
     const storagePath = `${userId}/${echoId}/photo.${fileExtension}`;

@@ -10,7 +10,7 @@ import { SupabaseEchoRepository } from '../features/echoes/data/SupabaseEchoRepo
 const echoRepository = new SupabaseEchoRepository();
 
 export default function CameraView({ visible, onClose, onEchoSaved }) {
-  const { isAuthenticated } = useAuth();
+  const { session } = useAuth();
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [draft, setDraft] = useState(null);
@@ -92,7 +92,7 @@ export default function CameraView({ visible, onClose, onEchoSaved }) {
 
   const saveDraft = async () => {
     if (!draft || isSaving) return;
-    if (!isAuthenticated) {
+    if (!session?.access_token) {
       showToast('Sign in from Profile first.');
       return;
     }
@@ -110,11 +110,13 @@ export default function CameraView({ visible, onClose, onEchoSaved }) {
       onEchoSaved?.();
       onClose?.();
     } catch (error) {
-      console.warn('Echo save failed:', error);
       const message =
         error.name === 'AuthSessionMissingError'
           ? 'Sign in from Profile first.'
           : error.message || 'Unable to save Echo.';
+      if (error.name !== 'AuthSessionMissingError') {
+        console.warn('Echo save failed:', error);
+      }
       showToast(message);
     } finally {
       setIsSaving(false);
@@ -158,7 +160,12 @@ export default function CameraView({ visible, onClose, onEchoSaved }) {
                   maxLength={180}
                   style={styles.noteInput}
                 />
-                <Text style={styles.noteCount}>{note.length}/180</Text>
+                <View style={styles.draftFooter}>
+                  <Text style={styles.draftStatus}>
+                    {session?.access_token ? 'Ready to save' : 'Sign in required to save'}
+                  </Text>
+                  <Text style={styles.noteCount}>{note.length}/180</Text>
+                </View>
               </View>
             </View>
           ) : (
@@ -167,6 +174,12 @@ export default function CameraView({ visible, onClose, onEchoSaved }) {
                 <Ionicons name="camera-outline" size={42} color="rgba(255,255,255,0.82)" />
                 <Text style={styles.capturePromptTitle}>Capture a place memory</Text>
                 <Text style={styles.capturePromptText}>Take a photo or choose one from your library.</Text>
+                {!session?.access_token ? (
+                  <View style={styles.sessionNotice}>
+                    <Ionicons name="lock-closed-outline" size={14} color="rgba(255,255,255,0.72)" />
+                    <Text style={styles.sessionNoticeText}>Sign in later to save this Echo.</Text>
+                  </View>
+                ) : null}
                 <View style={styles.captureActions}>
                   <Pressable
                     onPress={() => captureDraft('camera')}
@@ -309,6 +322,23 @@ const styles = StyleSheet.create({
     marginTop: 8,
     textAlign: 'center',
   },
+  sessionNotice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginTop: 18,
+  },
+  sessionNoticeText: {
+    color: 'rgba(255,255,255,0.72)',
+    fontSize: 12,
+    fontWeight: '700',
+  },
   captureActions: {
     width: '100%',
     gap: 12,
@@ -416,10 +446,20 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
     fontSize: 15,
   },
+  draftFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 6,
+  },
+  draftStatus: {
+    color: 'rgba(255,255,255,0.52)',
+    fontSize: 11,
+    fontWeight: '700',
+  },
   noteCount: {
     color: 'rgba(255,255,255,0.45)',
     fontSize: 11,
-    marginTop: 6,
     textAlign: 'right',
   },
 });

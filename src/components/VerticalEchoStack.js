@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Pressable, Dimensions } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle, interpolate, withTiming, runOnJS } from 'react-native-reanimated';
 import { GestureDetector, Gesture } from 'react-native-gesture-handler';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme';
 import FavoriteButton from './FavoriteButton';
 
@@ -27,7 +28,18 @@ export default function VerticalEchoStack({ echoes, currentIndex, onIndexChange,
   }, [currentIndex, total]);
 
   if (total === 0) {
-    return <View style={styles.emptyContainer}><Text style={styles.emptyText}>{emptyMessage}</Text></View>;
+    return (
+      <View style={styles.emptyContainer}>
+        <View style={styles.emptyCard}>
+          <View style={styles.emptyIcon}>
+            <Ionicons name="camera-outline" size={26} color={colors.ink} />
+          </View>
+          <Text style={styles.emptyTitle}>No Echoes yet</Text>
+          <Text style={styles.emptyText}>{emptyMessage}</Text>
+          <Text style={styles.emptyHint}>Tap the camera tab to save your first place memory.</Text>
+        </View>
+      </View>
+    );
   }
 
   const gesture = Gesture.Pan()
@@ -66,6 +78,9 @@ function StackCard({ echo, index, total, stackProgress, isCurrent, onPress, onFa
     return { opacity: interpolate(diff, [-0.001, 0], [0, 1], 'clamp') };
   });
   const photoUri = echo.photos[0]?.uri;
+  const locationName = echo.location.name || echo.location.locality || 'Saved location';
+  const title = echo.aiMetadata?.title || echo.note || locationName;
+  const tag = echo.tags[0] || 'memory';
 
   return (
     <Animated.View style={[styles.cardWrapper, cardStyle]} pointerEvents={isCurrent ? 'auto' : 'none'}>
@@ -73,7 +88,7 @@ function StackCard({ echo, index, total, stackProgress, isCurrent, onPress, onFa
         {photoUri ? <Animated.Image source={{ uri: photoUri }} style={styles.image} /> : <View style={styles.imageFallback} />}
         <Animated.View style={[styles.gradient, gradientStyle]} pointerEvents="none"><LinearGradient colors={['transparent', 'rgba(0,0,0,0.65)']} locations={[0.4, 1]} style={StyleSheet.absoluteFill} /></Animated.View>
         {isCurrent && <FavoriteButton size={40} iconSize={19} style={styles.favBtn} onToggle={onFavoriteToggle} />}
-        {isCurrent && <View style={styles.info}><Text style={styles.location}>{echo.location.name}</Text><Text style={styles.name}>{echo.aiMetadata?.title || echo.location.name}</Text><View style={styles.detailRow}><Text style={styles.tag}>{echo.tags[0]}</Text><Text style={styles.details}>{formatDate(echo.capturedAt)} - {echo.photos.length} photo{echo.photos.length === 1 ? '' : 's'}</Text></View></View>}
+        {isCurrent && <View style={styles.info}><Text style={styles.location}>{locationName}</Text><Text style={styles.name} numberOfLines={2}>{title}</Text><View style={styles.detailRow}><Text style={styles.tag}>{tag}</Text><Text style={styles.details}>{formatDate(echo.capturedAt)} - {echo.photos.length} photo{echo.photos.length === 1 ? '' : 's'}</Text></View></View>}
       </Pressable>
     </Animated.View>
   );
@@ -81,8 +96,12 @@ function StackCard({ echo, index, total, stackProgress, isCurrent, onPress, onFa
 
 const styles = StyleSheet.create({
   container: { height: 540, width: '100%', alignItems: 'center', justifyContent: 'center', position: 'relative', marginTop: 8 },
-  emptyContainer: { height: 540, width: '100%', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 36 },
-  emptyText: { color: colors.muted, fontSize: 14, textAlign: 'center' },
+  emptyContainer: { height: 540, width: '100%', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 14 },
+  emptyCard: { width: '100%', minHeight: 390, borderRadius: 28, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 28, borderWidth: 1, borderColor: colors.line, shadowColor: '#000', shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.08, shadowRadius: 24, elevation: 4 },
+  emptyIcon: { width: 58, height: 58, borderRadius: 29, backgroundColor: colors.paper, alignItems: 'center', justifyContent: 'center', marginBottom: 18 },
+  emptyTitle: { color: colors.ink, fontSize: 22, fontWeight: '800', textAlign: 'center', marginBottom: 8 },
+  emptyText: { color: colors.muted, fontSize: 14, lineHeight: 20, textAlign: 'center' },
+  emptyHint: { color: colors.ink, opacity: 0.68, fontSize: 12, lineHeight: 17, textAlign: 'center', marginTop: 16 },
   ambientGlow: { position: 'absolute', width: 280, height: 280, borderRadius: 140, backgroundColor: colors.pill, opacity: 0.08, transform: [{ scale: 1.5 }], zIndex: -1 },
   stackWrapper: { width: CARD_WIDTH, height: CARD_HEIGHT, alignItems: 'center', justifyContent: 'center' },
   cardWrapper: { position: 'absolute', width: CARD_WIDTH, height: CARD_HEIGHT, shadowColor: '#000', shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.25, shadowRadius: 20, elevation: 8 },

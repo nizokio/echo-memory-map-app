@@ -10,8 +10,9 @@ const version = '0.1.0';
 
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
-  const { isAuthenticated, isLoading, signOut, user } = useAuth();
+  const { error, isAuthenticated, isLoading, signInWithGoogle, signOut, user } = useAuth();
   const { profile } = useCurrentUser();
+  const [isSigningIn, setIsSigningIn] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
 
   const displayName = profile?.displayName || user?.email || 'Echo user';
@@ -25,6 +26,15 @@ export default function SettingsScreen() {
       await signOut();
     } finally {
       setIsSigningOut(false);
+    }
+  };
+
+  const handleSignIn = async () => {
+    setIsSigningIn(true);
+    try {
+      await signInWithGoogle();
+    } finally {
+      setIsSigningIn(false);
     }
   };
 
@@ -54,19 +64,41 @@ export default function SettingsScreen() {
               <Text style={styles.accountEmail}>{email}</Text>
             </View>
           </View>
-          <Pressable
-            style={[styles.primaryButton, (!isAuthenticated || isLoading || isSigningOut) && styles.disabled]}
-            onPress={handleSignOut}
-            disabled={!isAuthenticated || isLoading || isSigningOut}
-            accessibilityRole="button"
-            accessibilityLabel="Sign out"
-          >
-            {isSigningOut ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.primaryButtonText}>Sign Out</Text>
-            )}
-          </Pressable>
+          {isAuthenticated ? (
+            <Pressable
+              style={[styles.primaryButton, (isLoading || isSigningOut) && styles.disabled]}
+              onPress={handleSignOut}
+              disabled={isLoading || isSigningOut}
+              accessibilityRole="button"
+              accessibilityLabel="Sign out"
+            >
+              {isSigningOut ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.primaryButtonText}>Sign Out</Text>
+              )}
+            </Pressable>
+          ) : (
+            <>
+              <Pressable
+                style={[styles.primaryButton, (isLoading || isSigningIn) && styles.disabled]}
+                onPress={handleSignIn}
+                disabled={isLoading || isSigningIn}
+                accessibilityRole="button"
+                accessibilityLabel="Continue with Google"
+              >
+                {isSigningIn ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <View style={styles.googleButtonContent}>
+                    <Ionicons name="logo-google" size={18} color="#fff" />
+                    <Text style={styles.primaryButtonText}>Continue with Google</Text>
+                  </View>
+                )}
+              </Pressable>
+              {error ? <Text style={styles.errorText}>{error.message}</Text> : null}
+            </>
+          )}
         </Section>
 
         <Section title="Appearance">
@@ -199,6 +231,17 @@ const styles = StyleSheet.create({
   primaryButtonText: {
     ...typography.button,
     color: '#fff',
+  },
+  googleButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 9,
+  },
+  errorText: {
+    ...typography.caption,
+    color: '#A84A3A',
+    marginTop: 10,
+    textAlign: 'center',
   },
   disabled: {
     opacity: 0.45,

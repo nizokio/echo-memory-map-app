@@ -1,16 +1,22 @@
 import React, { useState, useCallback } from 'react';
-import { Pressable, View, Text, ScrollView, StyleSheet } from 'react-native';
+import { ActivityIndicator, Pressable, View, Text, ScrollView, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as Location from 'expo-location';
 import { colors, typography } from '../theme';
 import { useEchoes } from '../features/echoes/application/EchoDataProvider';
 import { useCurrentUser } from '../features/users/application/UserDataProvider';
+import EchoCard from '../components/EchoCard';
 import SearchBar from '../components/SearchBar';
 import VerticalEchoStack from '../components/VerticalEchoStack';
+
+const NEARBY_RADIUS_METERS = 1000;
 
 export default function HomeScreen({ navigation, onProfilePress }) {
   const insets = useSafeAreaInsets();
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [nearbyEchoes, setNearbyEchoes] = useState([]);
+  const [nearbyStatus, setNearbyStatus] = useState('idle');
   const { echoes, isLoading, error, isSupabaseConfigured } = useEchoes();
   const { profile } = useCurrentUser();
   const handlePressCard = useCallback((echo) => navigation.navigate('Detail', { echo }), [navigation]);
@@ -35,11 +41,99 @@ export default function HomeScreen({ navigation, onProfilePress }) {
           </Pressable>
         </View>
         <SearchBar />
+        <View style={styles.nearbyHeader}>
+          <View>
+            <Text style={styles.nearbyTitle}>Nearby</Text>
+            <Text style={styles.nearbySubtitle}>Echoes within 1 km</Text>
+          </View>
+          <Pressable
+            onPress={async () => {
+              if (nearbyStatus === 'loading') return;
+
+              setNearbyStatus('loading');
+              try {
+                const permission = await Location.requestForegroundPermissionsAsync();
+                if (!permission.granted) {
+                  setNearbyEchoes([]);
+                  setNearbyStatus('denied');
+                  return;
+                }
+
+                const position = await Location.getCurrentPositionAsync({
+                  accuracy: Location.Accuracy.Balanced,
+                });
+                const nextNearbyEchoes = echoes
+                  .map((echo) => ({
+                    echo,
+                    distance: getDistanceMeters(position.coords, echo.location),
+                  }))
+                  .filter((item) => item.distance <= NEARBY_RADIUS_METERS)
+                  .sort((left, right) => left.distance - right.distance)
+                  .map((item) => item.echo);
+
+                setNearbyEchoes(nextNearbyEchoes);
+                setNearbyStatus(nextNearbyEchoes.length ? 'ready' : 'empty');
+              } catch (nextError) {
+                setNearbyEchoes([]);
+                setNearbyStatus('error');
+              }
+            }}
+            style={styles.nearbyButton}
+            accessibilityRole="button"
+            accessibilityLabel="Find nearby Echoes"
+          >
+            {nearbyStatus === 'loading' ? (
+              <ActivityIndicator size="small" color={colors.ink} />
+            ) : (
+              <Text style={styles.nearbyButtonText}>Find</Text>
+            )}
+          </Pressable>
+        </View>
+        {nearbyStatus !== 'idle' ? (
+          <View style={styles.nearbyPanel}>
+            {nearbyStatus === 'ready' ? (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.nearbyList}>
+                {nearbyEchoes.map((echo) => (
+                  <EchoCard key={echo.id} echo={echo} onPress={() => handlePressCard(echo)} />
+                ))}
+              </ScrollView>
+            ) : (
+              <Text style={styles.nearbyMessage}>
+                {nearbyStatus === 'denied'
+                  ? 'Location permission is needed to find nearby Echoes.'
+                  : nearbyStatus === 'error'
+                    ? 'Unable to get your current location.'
+                    : 'No Echoes found within 1 km.'}
+              </Text>
+            )}
+          </View>
+        ) : null}
         <Text style={styles.memoriesHeading}>Echoes</Text>
         <VerticalEchoStack echoes={echoes} currentIndex={currentIndex} onIndexChange={setCurrentIndex} onPressCard={handlePressCard} emptyMessage={emptyMessage} />
       </ScrollView>
     </View>
   );
+}
+
+function getDistanceMeters(left, right) {
+  const earthRadiusMeters = 6371000;
+  const leftLatitude = toRadians(left.latitude);
+  const rightLatitude = toRadians(right.latitude);
+  const latitudeDelta = toRadians(right.latitude - left.latitude);
+  const longitudeDelta = toRadians(right.longitude - left.longitude);
+
+  const a =
+    Math.sin(latitudeDelta / 2) * Math.sin(latitudeDelta / 2) +
+    Math.cos(leftLatitude) *
+      Math.cos(rightLatitude) *
+      Math.sin(longitudeDelta / 2) *
+      Math.sin(longitudeDelta / 2);
+
+  return earthRadiusMeters * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function toRadians(value) {
+  return (value * Math.PI) / 180;
 }
 
 const styles = StyleSheet.create({
@@ -51,4 +145,12 @@ const styles = StyleSheet.create({
   subtitle: { ...typography.caption, color: colors.muted, marginTop: 2 },
   avatar: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', shadowColor: '#ff7a4d', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 10, elevation: 6 },
   avatarEmoji: { fontSize: 18, color: '#fff', fontWeight: '700' },
+  nearbyHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 18 },
+  nearbyTitle: { ...typography.h3, color: colors.ink },
+  nearbySubtitle: { ...typography.caption, color: colors.muted, marginTop: 2 },
+  nearbyButton: { minWidth: 72, height: 40, borderRadius: 20, backgroundColor: '#fff', borderWidth: 1, borderColor: colors.line, alignItems: 'center', justifyContent: 'center' },
+  nearbyButtonText: { ...typography.button, color: colors.ink },
+  nearbyPanel: { marginTop: 12, marginHorizontal: -20 },
+  nearbyList: { paddingLeft: 20, paddingRight: 6, paddingBottom: 4 },
+  nearbyMessage: { ...typography.caption, color: colors.muted, marginHorizontal: 20, padding: 14, borderRadius: 18, backgroundColor: '#fff', borderWidth: 1, borderColor: colors.line },
 });

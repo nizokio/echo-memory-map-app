@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Pressable, Dimensions } from 'react-native';
+import { ActivityIndicator, Image, TextInput, View, Text, StyleSheet, Pressable, Dimensions } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -7,22 +7,35 @@ import Animated, {
   runOnJS,
 } from 'react-native-reanimated';
 import { Feather, Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
+import * as Location from 'expo-location';
 import Toast from './Toast';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 export default function CameraView({ visible, onClose }) {
   const [toastVisible, setToastVisible] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
   const [flashMode, setFlashMode] = useState('off'); // off, on, auto
   const [aspectRatio, setAspectRatio] = useState('4:3');
   const [hdrEnabled, setHdrEnabled] = useState(false);
+  const [draft, setDraft] = useState(null);
+  const [note, setNote] = useState('');
+  const [isCapturing, setIsCapturing] = useState(false);
 
   const shutterOpacity = useSharedValue(0);
   const shutterScale = useSharedValue(1);
 
   // Close camera with timing
   const handleClose = () => {
+    resetDraft();
     onClose?.();
+  };
+
+  const resetDraft = () => {
+    setDraft(null);
+    setNote('');
+    setIsCapturing(false);
   };
 
   const toggleFlash = () => {
@@ -40,7 +53,7 @@ export default function CameraView({ visible, onClose }) {
   };
 
   // Timed Shutter Snap Animation
-  const triggerShutter = () => {
+  const triggerShutterAnimation = (onComplete) => {
     shutterScale.value = withTiming(0.9, { duration: 60 }, () => {
       shutterScale.value = withTiming(1, { duration: 100 });
     });
@@ -48,13 +61,76 @@ export default function CameraView({ visible, onClose }) {
     // Flash/Shutter screen black overlay animation (ease-out snap, 150ms total)
     shutterOpacity.value = withTiming(1, { duration: 40 }, () => {
       shutterOpacity.value = withTiming(0, { duration: 120 }, () => {
-        runOnJS(showSavedToast)();
+        if (onComplete) runOnJS(onComplete)();
       });
     });
   };
 
-  const showSavedToast = () => {
+  const showToast = (message) => {
+    setToastMessage(message);
     setToastVisible(true);
+  };
+
+  const captureDraft = async (source) => {
+    if (isCapturing) return;
+
+    setIsCapturing(true);
+    try {
+      const permission =
+        source === 'camera'
+          ? await ImagePicker.requestCameraPermissionsAsync()
+          : await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      if (!permission.granted) {
+        showToast(source === 'camera' ? 'Camera permission is required.' : 'Photo access is required.');
+        return;
+      }
+
+      const picker =
+        source === 'camera'
+          ? ImagePicker.launchCameraAsync
+          : ImagePicker.launchImageLibraryAsync;
+
+      const result = await picker({
+        allowsEditing: false,
+        quality: 0.85,
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      });
+
+      if (result.canceled || !result.assets?.[0]) return;
+
+      const locationPermission = await Location.requestForegroundPermissionsAsync();
+      if (!locationPermission.granted) {
+        showToast('Location permission is required.');
+        return;
+      }
+
+      const position = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+
+      setDraft({
+        photo: result.assets[0],
+        location: {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        },
+        capturedAt: new Date().toISOString(),
+      });
+      showToast('Draft ready.');
+    } catch (error) {
+      showToast(error.message || 'Unable to prepare Echo.');
+    } finally {
+      setIsCapturing(false);
+    }
+  };
+
+  const handleCapturePress = () => {
+    triggerShutterAnimation(() => captureDraft('camera'));
+  };
+
+  const handleGalleryPress = () => {
+    captureDraft('library');
   };
 
   const shutterFlashStyle = useAnimatedStyle(() => ({
@@ -99,38 +175,73 @@ export default function CameraView({ visible, onClose }) {
 
         {/* Camera Viewfinder Area */}
         <View style={styles.viewfinder}>
-          {/* Subtle Grid Rule of Thirds Overlay */}
-          <View style={styles.gridLineV1} />
-          <View style={styles.gridLineV2} />
-          <View style={styles.gridLineH1} />
-          <View style={styles.gridLineH2} />
+          {draft ? (
+            <View style={styles.draftPanel}>
+              <Image source={{ uri: draft.photo.uri }} style={styles.previewImage} />
+              <View style={styles.draftContent}>
+                <Text style={styles.draftTitle}>New Echo</Text>
+                <Text style={styles.draftMeta}>
+                  {draft.location.latitude.toFixed(5)}, {draft.location.longitude.toFixed(5)}
+                </Text>
+                <TextInput
+                  value={note}
+                  onChangeText={setNote}
+                  placeholder="What do you want to remember?"
+                  placeholderTextColor="rgba(255,255,255,0.45)"
+                  multiline
+                  maxLength={180}
+                  style={styles.noteInput}
+                />
+                <Text style={styles.noteCount}>{note.length}/180</Text>
+              </View>
+            </View>
+          ) : (
+            <>
+              {/* Subtle Grid Rule of Thirds Overlay */}
+              <View style={styles.gridLineV1} />
+              <View style={styles.gridLineV2} />
+              <View style={styles.gridLineH1} />
+              <View style={styles.gridLineH2} />
 
-          {/* Focal center indicator */}
-          <View style={styles.focalBox} />
+              {/* Focal center indicator */}
+              <View style={styles.focalBox} />
+            </>
+          )}
         </View>
 
         {/* Bottom Controls / Letterbox */}
         <View style={styles.bottomBar}>
           {/* Left: Gallery Thumbnail */}
-          <View style={styles.galleryThumb}>
+          <Pressable
+            onPress={draft ? resetDraft : handleGalleryPress}
+            style={styles.galleryThumb}
+            accessibilityLabel={draft ? 'Retake Echo photo' : 'Choose photo from library'}
+            accessibilityRole="button"
+          >
             <View style={styles.galleryInner} />
-          </View>
+          </Pressable>
 
           {/* Center: Shutter Button */}
           <Animated.View style={shutterBtnStyle}>
             <Pressable
-              onPress={triggerShutter}
-              style={styles.shutterOuter}
-              accessibilityLabel="Capture photo"
+              onPress={draft ? () => showToast('Save comes next.') : handleCapturePress}
+              style={[styles.shutterOuter, isCapturing && styles.disabledControl]}
+              disabled={isCapturing}
+              accessibilityLabel={draft ? 'Draft ready' : 'Capture photo'}
               accessibilityRole="button"
             >
-              <View style={styles.shutterInner} />
+              {isCapturing ? <ActivityIndicator color="#fff" /> : <View style={styles.shutterInner} />}
             </Pressable>
           </Animated.View>
 
           {/* Right: Camera Flip Icon */}
-          <Pressable style={styles.flipBtn} accessibilityLabel="Flip camera" accessibilityRole="button">
-            <Ionicons name="camera-reverse-outline" size={24} color="#fff" />
+          <Pressable
+            style={styles.flipBtn}
+            onPress={draft ? resetDraft : undefined}
+            accessibilityLabel={draft ? 'Discard draft' : 'Flip camera'}
+            accessibilityRole="button"
+          >
+            <Ionicons name={draft ? 'trash-outline' : 'camera-reverse-outline'} size={24} color="#fff" />
           </Pressable>
         </View>
 
@@ -143,7 +254,7 @@ export default function CameraView({ visible, onClose }) {
         {/* Echo Saved Success Toast */}
         <Toast
           visible={toastVisible}
-          message="Echo saved! 📸"
+          message={toastMessage}
           duration={2000}
           onHide={() => setToastVisible(false)}
         />
@@ -265,6 +376,9 @@ const styles = StyleSheet.create({
     borderRadius: 27,
     backgroundColor: '#fff',
   },
+  disabledControl: {
+    opacity: 0.7,
+  },
   galleryThumb: {
     width: 40,
     height: 40,
@@ -288,5 +402,46 @@ const styles = StyleSheet.create({
   shutterOverlay: {
     backgroundColor: '#000',
     zIndex: 110,
+  },
+  draftPanel: {
+    flex: 1,
+    padding: 18,
+  },
+  previewImage: {
+    flex: 1,
+    borderRadius: 18,
+    backgroundColor: '#222',
+  },
+  draftContent: {
+    paddingTop: 16,
+  },
+  draftTitle: {
+    color: '#fff',
+    fontSize: 22,
+    fontWeight: '800',
+  },
+  draftMeta: {
+    color: 'rgba(255,255,255,0.62)',
+    fontSize: 12,
+    marginTop: 4,
+  },
+  noteInput: {
+    minHeight: 84,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    color: '#fff',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginTop: 14,
+    textAlignVertical: 'top',
+    fontSize: 15,
+  },
+  noteCount: {
+    color: 'rgba(255,255,255,0.45)',
+    fontSize: 11,
+    marginTop: 6,
+    textAlign: 'right',
   },
 });

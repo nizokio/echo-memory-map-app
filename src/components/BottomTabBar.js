@@ -1,5 +1,5 @@
-import React from 'react';
-import { Pressable, StyleSheet, Dimensions } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { Pressable, StyleSheet, Dimensions, View } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   withTiming,
@@ -9,7 +9,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const TAB_BAR_WIDTH = 350; // Increased horizontal length
+const EXPANDED_WIDTH = Math.min(326, SCREEN_WIDTH - 34);
+const COLLAPSED_WIDTH = 76;
+const AUTO_COLLAPSE_MS = 2400;
 
 const tabs = [
   { key: 'home', icon: 'home-outline', iconActive: 'home' },
@@ -20,11 +22,21 @@ const tabs = [
 ];
 
 export default function BottomTabBar({ visible = true, activeTab = 0, onTabPress }) {
+  const [expanded, setExpanded] = useState(true);
   const reduceMotion = useReducedMotion();
+
+  useEffect(() => {
+    if (!visible || !expanded) return undefined;
+
+    const timer = setTimeout(() => setExpanded(false), AUTO_COLLAPSE_MS);
+    return () => clearTimeout(timer);
+  }, [expanded, visible]);
 
   const containerStyle = useAnimatedStyle(() => {
     const dur = reduceMotion ? 0 : 300;
     return {
+      left: withTiming((SCREEN_WIDTH - (expanded ? EXPANDED_WIDTH : COLLAPSED_WIDTH)) / 2, { duration: dur }),
+      width: withTiming(expanded ? EXPANDED_WIDTH : COLLAPSED_WIDTH, { duration: dur }),
       opacity: withTiming(visible ? 1 : 0, { duration: dur }),
       transform: [
         {
@@ -36,9 +48,11 @@ export default function BottomTabBar({ visible = true, activeTab = 0, onTabPress
     };
   }, [visible]);
 
+  const activeTabItem = tabs[activeTab] || tabs[0];
+
   return (
     <Animated.View style={[styles.container, containerStyle]} pointerEvents={visible ? 'auto' : 'none'}>
-      {tabs.map((tab, index) => {
+      {expanded ? tabs.map((tab, index) => {
         const isActive = index === activeTab;
         return (
           <Pressable
@@ -58,7 +72,17 @@ export default function BottomTabBar({ visible = true, activeTab = 0, onTabPress
             />
           </Pressable>
         );
-      })}
+      }) : (
+        <Pressable
+          style={styles.collapsedButton}
+          onPress={() => setExpanded(true)}
+          accessibilityLabel="Open navigation"
+          accessibilityRole="button"
+        >
+          <Ionicons name={activeTabItem.iconActive} size={24} color="#111" />
+          <View style={styles.collapsedDot} />
+        </Pressable>
+      )}
     </Animated.View>
   );
 }
@@ -66,12 +90,10 @@ export default function BottomTabBar({ visible = true, activeTab = 0, onTabPress
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    left: (SCREEN_WIDTH - TAB_BAR_WIDTH) / 2,
-    width: TAB_BAR_WIDTH,
-    bottom: 36, // Shifted further up
-    height: 84, // Larger height
+    bottom: 18,
+    height: 64,
     backgroundColor: colors.ink,
-    borderRadius: 42,
+    borderRadius: 32,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-evenly',
@@ -83,13 +105,30 @@ const styles = StyleSheet.create({
     zIndex: 60,
   },
   navItem: {
-    width: 62, // Larger active highlight circle
-    height: 62,
-    borderRadius: 31,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
     alignItems: 'center',
     justifyContent: 'center',
   },
   navItemActive: {
     backgroundColor: '#fff',
+  },
+  collapsedButton: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  collapsedDot: {
+    position: 'absolute',
+    right: 10,
+    bottom: 10,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.gold,
   },
 });

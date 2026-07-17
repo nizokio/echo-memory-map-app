@@ -100,6 +100,16 @@ export class SupabaseEchoRepository extends EchoRepository {
     }
   }
 
+  async captionEcho(echoId) {
+    if (!isSupabaseConfigured || !supabase) throw new Error('Supabase is not configured.');
+
+    const { error } = await supabase.functions.invoke('caption-echo', {
+      body: { echoId },
+    });
+
+    if (error) throw error;
+  }
+
   async uploadEchoPhoto({ userId, echoId, photo }) {
     const fileExtension = this.getPhotoExtension(photo);
     const storagePath = `${userId}/${echoId}/photo.${fileExtension}`;

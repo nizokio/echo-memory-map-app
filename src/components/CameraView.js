@@ -99,7 +99,7 @@ export default function CameraView({ visible, onClose, onEchoSaved }) {
 
     setIsSaving(true);
     try {
-      await echoRepository.createEcho({
+      const echoId = await echoRepository.createEcho({
         note,
         location: draft.location,
         capturedAt: draft.capturedAt,
@@ -109,6 +109,11 @@ export default function CameraView({ visible, onClose, onEchoSaved }) {
       resetDraft();
       onEchoSaved?.();
       onClose?.();
+
+      void echoRepository
+        .captionEcho(echoId)
+        .then(() => onEchoSaved?.())
+        .catch((error) => console.warn('Echo caption failed:', error));
     } catch (error) {
       const message =
         error.name === 'AuthSessionMissingError'

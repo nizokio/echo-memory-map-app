@@ -15,9 +15,10 @@ const OVERLAP = 28;
 
 export default function DetailScreen({ navigation, route }) {
   const insets = useSafeAreaInsets();
-  const echo = route.params?.echo;
   const [expanded, setExpanded] = useState(false);
   const { echoes } = useEchoes();
+  const routeEcho = route.params?.echo;
+  const echo = echoes.find((item) => item.id === routeEcho?.id) || routeEcho;
   const relatedEchoes = getRelatedEchoes(echoes, echo);
   const scrollY = useSharedValue(0);
   const reduceMotion = useReducedMotion();
@@ -45,6 +46,12 @@ export default function DetailScreen({ navigation, route }) {
           </View>
           <Text style={styles.desc}>{expanded ? echo?.note : (echo?.aiMetadata?.summary || echo?.note)}</Text>
           <Pressable onPress={() => setExpanded(!expanded)}><Text style={styles.readMore}>{expanded ? 'Read less' : 'Read more'}</Text></Pressable>
+          {echo?.aiMetadata?.caption ? (
+            <View style={styles.captionBlock}>
+              <Text style={styles.captionLabel}>Photo caption</Text>
+              <Text style={styles.captionText}>{echo.aiMetadata.caption}</Text>
+            </View>
+          ) : null}
           <View style={styles.rowBetween}><Text style={styles.sectionTitle}>Related echoes</Text><Pressable onPress={() => navigation.navigate('MemoryTimeline', { echo })} accessibilityRole="button"><Text style={styles.seeAll}>View memory</Text></Pressable></View>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.relatedScroll} contentContainerStyle={styles.relatedContent}>
             {relatedEchoes.map((relatedEcho) => <EchoCard key={relatedEcho.id} echo={relatedEcho} onPress={() => navigation.push('Detail', { echo: relatedEcho })} />)}
@@ -67,6 +74,7 @@ const styles = StyleSheet.create({
   locRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }, locDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.locDot }, locText: { ...typography.caption, color: colors.muted },
   rateBox: { alignItems: 'flex-end', maxWidth: 115 }, stars: { color: colors.gold, fontSize: 14, fontWeight: '700' }, reviews: { ...typography.label, color: colors.muted, textDecorationLine: 'underline', marginTop: 2, textAlign: 'right' },
   desc: { ...typography.bodySmall, color: colors.descText, lineHeight: 21, marginTop: 16 }, readMore: { ...typography.caption, fontWeight: '700', color: colors.ink, marginTop: 4 },
+  captionBlock: { marginTop: 18, paddingLeft: 12, borderLeftWidth: 2, borderLeftColor: colors.gold }, captionLabel: { ...typography.label, color: colors.muted, textTransform: 'uppercase' }, captionText: { ...typography.bodySmall, color: colors.descText, lineHeight: 20, marginTop: 4 },
   rowBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 26 }, sectionTitle: { ...typography.h3, color: colors.ink }, seeAll: { ...typography.caption, fontWeight: '600', color: colors.muted, textDecorationLine: 'underline' },
   relatedScroll: { marginTop: 16, marginHorizontal: -20 }, relatedContent: { paddingLeft: 20, paddingBottom: 6 },
 });

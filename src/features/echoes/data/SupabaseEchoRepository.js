@@ -54,8 +54,10 @@ export class SupabaseEchoRepository extends EchoRepository {
     return new Map((data || []).map((item) => [item.path, item.signedUrl]));
   }
 
-  async createEcho({ note, location, capturedAt, photo }) {
+  async createEcho({ note, location, capturedAt, photo, photos }) {
     if (!isSupabaseConfigured || !supabase) throw new Error('Supabase is not configured.');
+    const echoPhotos = photos?.length ? photos : photo ? [photo] : [];
+    if (echoPhotos.length === 0) throw new Error('Add at least one photo before saving.');
 
     const { data: userData, error: userError } = await supabase.auth.getUser();
     if (userError) throw userError;
@@ -76,25 +78,37 @@ export class SupabaseEchoRepository extends EchoRepository {
 
     if (echoError) throw echoError;
 
+    const uploadedPaths = [];
     try {
-      const storagePath = await this.uploadEchoPhoto({
-        userId: userData.user.id,
-        echoId: echo.id,
-        photo,
-      });
+      const uploadedPhotos = [];
+      for (let index = 0; index < echoPhotos.length; index += 1) {
+        const nextPhoto = echoPhotos[index];
+        const storagePath = await this.uploadEchoPhoto({
+          userId: userData.user.id,
+          echoId: echo.id,
+          photo: nextPhoto,
+          index,
+        });
+        uploadedPaths.push(storagePath);
 
-      const { error: photoError } = await supabase.from('echo_photos').insert({
-        echo_id: echo.id,
-        storage_path: storagePath,
-        width: photo.width || null,
-        height: photo.height || null,
-        sort_order: 0,
-        captured_at: capturedAt,
-      });
+        uploadedPhotos.push({
+          echo_id: echo.id,
+          storage_path: storagePath,
+          width: nextPhoto.width || null,
+          height: nextPhoto.height || null,
+          sort_order: index,
+          captured_at: capturedAt,
+        });
+      }
+
+      const { error: photoError } = await supabase.from('echo_photos').insert(uploadedPhotos);
 
       if (photoError) throw photoError;
       return echo.id;
     } catch (error) {
+      if (uploadedPaths.length > 0) {
+        await supabase.storage.from(PHOTO_BUCKET).remove(uploadedPaths);
+      }
       await supabase.from('echoes').delete().eq('id', echo.id);
       throw error;
     }
@@ -130,9 +144,9 @@ export class SupabaseEchoRepository extends EchoRepository {
     if (error) throw error;
   }
 
-  async uploadEchoPhoto({ userId, echoId, photo }) {
+  async uploadEchoPhoto({ userId, echoId, photo, index = 0 }) {
     const fileExtension = this.getPhotoExtension(photo);
-    const storagePath = `${userId}/${echoId}/photo.${fileExtension}`;
+    const storagePath = `${userId}/${echoId}/photo-${index}.${fileExtension}`;
     const response = await fetch(photo.uri);
     const fileData = await response.arrayBuffer();
 

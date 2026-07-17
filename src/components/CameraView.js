@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ActivityIndicator, Image, TextInput, View, Text, StyleSheet, Pressable } from 'react-native';
+import { ActivityIndicator, Image, ScrollView, TextInput, View, Text, StyleSheet, Pressable } from 'react-native';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
@@ -58,11 +58,14 @@ export default function CameraView({ visible, onClose, onEchoSaved }) {
 
       const result = await picker({
         allowsEditing: false,
+        allowsMultipleSelection: source === 'library',
+        selectionLimit: source === 'library' ? 8 : 1,
         quality: 0.85,
         mediaTypes: ['images'],
       });
 
       if (result.canceled || !result.assets?.[0]) return;
+      const photos = result.assets.slice(0, 8);
 
       const locationPermission = await Location.requestForegroundPermissionsAsync();
       if (!locationPermission.granted) {
@@ -75,7 +78,7 @@ export default function CameraView({ visible, onClose, onEchoSaved }) {
       });
 
       setDraft({
-        photo: result.assets[0],
+        photos,
         location: {
           latitude: position.coords.latitude,
           longitude: position.coords.longitude,
@@ -103,7 +106,7 @@ export default function CameraView({ visible, onClose, onEchoSaved }) {
         note,
         location: draft.location,
         capturedAt: draft.capturedAt,
-        photo: draft.photo,
+        photos: draft.photos,
       });
       showToast('Echo saved.');
       resetDraft();
@@ -150,12 +153,22 @@ export default function CameraView({ visible, onClose, onEchoSaved }) {
         <View style={styles.viewfinder}>
           {draft ? (
             <View style={styles.draftPanel}>
-              <Image source={{ uri: draft.photo.uri }} style={styles.previewImage} />
+              <Image source={{ uri: draft.photos[0].uri }} style={styles.previewImage} />
               <View style={styles.draftContent}>
                 <Text style={styles.draftTitle}>New Echo</Text>
                 <Text style={styles.draftMeta}>
-                  {draft.location.latitude.toFixed(5)}, {draft.location.longitude.toFixed(5)}
+                  {draft.photos.length} photo{draft.photos.length === 1 ? '' : 's'} - {draft.location.latitude.toFixed(5)}, {draft.location.longitude.toFixed(5)}
                 </Text>
+                {draft.photos.length > 1 ? (
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.photoStrip}>
+                    {draft.photos.map((photo, index) => (
+                      <View key={`${photo.uri}-${index}`} style={styles.photoThumbWrap}>
+                        <Image source={{ uri: photo.uri }} style={styles.photoThumb} />
+                        <Text style={styles.photoThumbIndex}>{index + 1}</Text>
+                      </View>
+                    ))}
+                  </ScrollView>
+                ) : null}
                 <TextInput
                   value={note}
                   onChangeText={setNote}
@@ -210,7 +223,7 @@ export default function CameraView({ visible, onClose, onEchoSaved }) {
                     accessibilityRole="button"
                   >
                     <Ionicons name="images-outline" size={20} color="#fff" />
-                    <Text style={styles.secondaryActionText}>Choose Photo</Text>
+                    <Text style={styles.secondaryActionText}>Choose Photos</Text>
                   </Pressable>
                 </View>
               </View>
@@ -437,6 +450,36 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.62)',
     fontSize: 12,
     marginTop: 4,
+  },
+  photoStrip: {
+    gap: 8,
+    paddingTop: 12,
+  },
+  photoThumbWrap: {
+    width: 58,
+    height: 58,
+    borderRadius: 14,
+    overflow: 'hidden',
+    backgroundColor: '#222',
+  },
+  photoThumb: {
+    width: '100%',
+    height: '100%',
+  },
+  photoThumbIndex: {
+    position: 'absolute',
+    right: 5,
+    bottom: 4,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(0,0,0,0.62)',
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '800',
+    textAlign: 'center',
+    lineHeight: 18,
   },
   noteInput: {
     minHeight: 84,

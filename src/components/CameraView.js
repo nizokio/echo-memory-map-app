@@ -10,10 +10,12 @@ import { Feather, Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import Toast from './Toast';
+import { SupabaseEchoRepository } from '../features/echoes/data/SupabaseEchoRepository';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const echoRepository = new SupabaseEchoRepository();
 
-export default function CameraView({ visible, onClose }) {
+export default function CameraView({ visible, onClose, onEchoSaved }) {
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [flashMode, setFlashMode] = useState('off'); // off, on, auto
@@ -22,6 +24,7 @@ export default function CameraView({ visible, onClose }) {
   const [draft, setDraft] = useState(null);
   const [note, setNote] = useState('');
   const [isCapturing, setIsCapturing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const shutterOpacity = useSharedValue(0);
   const shutterScale = useSharedValue(1);
@@ -36,6 +39,7 @@ export default function CameraView({ visible, onClose }) {
     setDraft(null);
     setNote('');
     setIsCapturing(false);
+    setIsSaving(false);
   };
 
   const toggleFlash = () => {
@@ -133,6 +137,28 @@ export default function CameraView({ visible, onClose }) {
     captureDraft('library');
   };
 
+  const saveDraft = async () => {
+    if (!draft || isSaving) return;
+
+    setIsSaving(true);
+    try {
+      await echoRepository.createEcho({
+        note,
+        location: draft.location,
+        capturedAt: draft.capturedAt,
+        photo: draft.photo,
+      });
+      showToast('Echo saved.');
+      resetDraft();
+      onEchoSaved?.();
+      onClose?.();
+    } catch (error) {
+      showToast(error.message || 'Unable to save Echo.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const shutterFlashStyle = useAnimatedStyle(() => ({
     opacity: shutterOpacity.value,
   }));
@@ -224,13 +250,22 @@ export default function CameraView({ visible, onClose }) {
           {/* Center: Shutter Button */}
           <Animated.View style={shutterBtnStyle}>
             <Pressable
-              onPress={draft ? () => showToast('Save comes next.') : handleCapturePress}
-              style={[styles.shutterOuter, isCapturing && styles.disabledControl]}
-              disabled={isCapturing}
-              accessibilityLabel={draft ? 'Draft ready' : 'Capture photo'}
+              onPress={draft ? saveDraft : handleCapturePress}
+              style={[
+                draft ? styles.saveButton : styles.shutterOuter,
+                (isCapturing || isSaving) && styles.disabledControl,
+              ]}
+              disabled={isCapturing || isSaving}
+              accessibilityLabel={draft ? 'Save Echo' : 'Capture photo'}
               accessibilityRole="button"
             >
-              {isCapturing ? <ActivityIndicator color="#fff" /> : <View style={styles.shutterInner} />}
+              {isCapturing || isSaving ? (
+                <ActivityIndicator color={draft ? '#000' : '#fff'} />
+              ) : draft ? (
+                <Text style={styles.saveButtonText}>Save</Text>
+              ) : (
+                <View style={styles.shutterInner} />
+              )}
             </Pressable>
           </Animated.View>
 
@@ -375,6 +410,20 @@ const styles = StyleSheet.create({
     height: 54,
     borderRadius: 27,
     backgroundColor: '#fff',
+  },
+  saveButton: {
+    minWidth: 96,
+    height: 54,
+    borderRadius: 27,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+  },
+  saveButtonText: {
+    color: '#000',
+    fontSize: 15,
+    fontWeight: '800',
   },
   disabledControl: {
     opacity: 0.7,

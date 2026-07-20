@@ -25,7 +25,13 @@
     },
     "plugins": [
       "expo-font",
-      "expo-web-browser"
-    ]
+      "expo-web-browser",
+      "expo-audio"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "9bec8bb9-d18b-4319-86ef-686500fe565a"
+      }
+    }
   }
 }

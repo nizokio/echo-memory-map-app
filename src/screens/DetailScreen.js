@@ -3,6 +3,15 @@ import { ActivityIndicator, Alert, Image, View, Text, ScrollView, Pressable, Sty
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import {
+  RecordingPresets,
+  requestRecordingPermissionsAsync,
+  setAudioModeAsync,
+  useAudioPlayer,
+  useAudioPlayerStatus,
+  useAudioRecorder,
+  useAudioRecorderState,
+} from 'expo-audio';
 import Animated, { useSharedValue, useAnimatedScrollHandler, useAnimatedStyle, interpolate, useReducedMotion } from 'react-native-reanimated';
 import { colors, typography } from '../theme';
 import { getRelatedEchoes } from '../domain/echo/echoRelations';
@@ -21,7 +30,10 @@ export default function DetailScreen({ navigation, route }) {
   const [expanded, setExpanded] = useState(false);
   const [isAddingPhotos, setIsAddingPhotos] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isSavingAudio, setIsSavingAudio] = useState(false);
   const { echoes, refresh } = useEchoes();
+  const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
+  const recorderState = useAudioRecorderState(audioRecorder);
   const routeEcho = route.params?.echo;
   const echo = echoes.find((item) => item.id === routeEcho?.id) || routeEcho;
   const relatedEchoes = getRelatedEchoes(echoes, echo);
@@ -81,6 +93,71 @@ export default function DetailScreen({ navigation, route }) {
     }
   };
 
+  const startRecording = async () => {
+    if (isSavingAudio || recorderState.isRecording) return;
+
+    try {
+      const permission = await requestRecordingPermissionsAsync();
+      if (!permission.granted) {
+        Alert.alert('Microphone access needed', 'Allow microphone access to add a voice note to this memory.');
+        return;
+      }
+
+      await setAudioModeAsync({
+        allowsRecording: true,
+        playsInSilentMode: true,
+        interruptionMode: 'doNotMix',
+        shouldPlayInBackground: false,
+        shouldRouteThroughEarpiece: false,
+      });
+      await audioRecorder.prepareToRecordAsync();
+      audioRecorder.record();
+    } catch (error) {
+      Alert.alert('Unable to start recording', error.message || 'Please try again.');
+    }
+  };
+
+  const stopAndSaveRecording = async () => {
+    if (!echo?.id || isSavingAudio || !recorderState.isRecording) return;
+
+    setIsSavingAudio(true);
+    try {
+      const durationMs = recorderState.durationMillis;
+      await audioRecorder.stop();
+      await setAudioModeAsync({
+        allowsRecording: false,
+        playsInSilentMode: true,
+        interruptionMode: 'doNotMix',
+        shouldPlayInBackground: false,
+        shouldRouteThroughEarpiece: false,
+      });
+
+      if (!audioRecorder.uri) {
+        throw new Error('Recording file was not created.');
+      }
+
+      await echoRepository.addAudioNoteToEcho({
+        echoId: echo.id,
+        recordingUri: audioRecorder.uri,
+        durationMs,
+        capturedAt: new Date().toISOString(),
+      });
+      await refresh();
+    } catch (error) {
+      Alert.alert('Unable to save voice note', error.message || 'Please try again.');
+    } finally {
+      setIsSavingAudio(false);
+    }
+  };
+
+  const handleAudioButtonPress = () => {
+    if (recorderState.isRecording) {
+      stopAndSaveRecording();
+    } else {
+      startRecording();
+    }
+  };
+
   const confirmDelete = () => {
     Alert.alert('Delete this memory?', 'This removes the memory and its photos from your library.', [
       { text: 'Cancel', style: 'cancel' },
@@ -130,6 +207,43 @@ export default function DetailScreen({ navigation, route }) {
             <Text style={styles.metaLabel}>Captured</Text>
             <Text style={styles.metaValue}>{formatDateTime(echo?.capturedAt)}</Text>
           </View>
+          <View style={styles.voiceSection}>
+            <View style={styles.rowBetweenTight}>
+              <Text style={styles.sectionTitle}>Voice notes</Text>
+              <Pressable
+                onPress={handleAudioButtonPress}
+                disabled={isSavingAudio}
+                style={[
+                  styles.voiceButton,
+                  recorderState.isRecording && styles.recordingButton,
+                  isSavingAudio && styles.disabled,
+                ]}
+                accessibilityRole="button"
+                accessibilityLabel={recorderState.isRecording ? 'Stop and save voice note' : 'Add voice note'}
+              >
+                {isSavingAudio ? (
+                  <ActivityIndicator color={colors.ink} />
+                ) : (
+                  <>
+                    <Feather name={recorderState.isRecording ? 'square' : 'mic'} size={15} color={recorderState.isRecording ? '#fff' : colors.ink} />
+                    <Text style={[styles.voiceButtonText, recorderState.isRecording && styles.recordingButtonText]}>
+                      {recorderState.isRecording ? 'Save' : 'Record'}
+                    </Text>
+                  </>
+                )}
+              </Pressable>
+            </View>
+            {recorderState.isRecording ? <Text style={styles.recordingHint}>Recording {formatDuration(recorderState.durationMillis)}</Text> : null}
+            {echo?.audioNotes?.length ? (
+              <View style={styles.voiceList}>
+                {echo.audioNotes.map((audio, index) => (
+                  <VoiceNotePlayer key={audio.id || audio.storagePath} audio={audio} index={index} />
+                ))}
+              </View>
+            ) : (
+              <Text style={styles.emptyVoiceText}>No voice notes yet.</Text>
+            )}
+          </View>
           <Pressable
             onPress={confirmDelete}
             disabled={isDeleting}
@@ -160,6 +274,40 @@ export default function DetailScreen({ navigation, route }) {
   );
 }
 
+function VoiceNotePlayer({ audio, index }) {
+  const player = useAudioPlayer(audio.uri);
+  const status = useAudioPlayerStatus(player);
+
+  const togglePlayback = async () => {
+    if (!audio.uri) {
+      Alert.alert('Voice note unavailable', 'This voice note could not be loaded right now.');
+      return;
+    }
+
+    if (status.playing) {
+      player.pause();
+      return;
+    }
+
+    if (status.didJustFinish) {
+      await player.seekTo(0);
+    }
+    player.play();
+  };
+
+  return (
+    <Pressable onPress={togglePlayback} style={styles.voiceItem} accessibilityRole="button" accessibilityLabel={`Play voice note ${index + 1}`}>
+      <View style={styles.voiceIcon}>
+        <Feather name={status.playing ? 'pause' : 'play'} size={14} color={colors.ink} />
+      </View>
+      <View style={styles.voiceCopy}>
+        <Text style={styles.voiceTitle}>Voice note {index + 1}</Text>
+        <Text style={styles.voiceMeta}>{formatDuration(audio.durationMs)}</Text>
+      </View>
+    </Pressable>
+  );
+}
+
 function formatDateTime(value) {
   if (!value) return 'Unknown time';
 
@@ -169,6 +317,15 @@ function formatDateTime(value) {
     hour: 'numeric',
     minute: '2-digit',
   }).format(new Date(value));
+}
+
+function formatDuration(milliseconds) {
+  if (!milliseconds) return '0:00';
+
+  const totalSeconds = Math.max(0, Math.round(milliseconds / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
 }
 
 const styles = StyleSheet.create({
@@ -186,6 +343,20 @@ const styles = StyleSheet.create({
   addPhotosButton: { height: 46, borderRadius: 18, backgroundColor: '#fff', borderWidth: 1, borderColor: colors.line, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 16 }, addPhotosText: { ...typography.button, color: colors.ink },
   desc: { ...typography.bodySmall, color: colors.descText, lineHeight: 21, marginTop: 16 }, readMore: { ...typography.caption, fontWeight: '700', color: colors.ink, marginTop: 4 },
   memoryMeta: { marginTop: 18, padding: 14, borderRadius: 18, backgroundColor: '#fff', borderWidth: 1, borderColor: colors.line }, metaLabel: { ...typography.label, color: colors.muted, textTransform: 'uppercase' }, metaValue: { ...typography.bodySmall, color: colors.ink, marginTop: 4 },
+  voiceSection: { marginTop: 18, padding: 14, borderRadius: 18, backgroundColor: '#fff', borderWidth: 1, borderColor: colors.line },
+  rowBetweenTight: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  voiceButton: { minWidth: 94, height: 36, borderRadius: 18, backgroundColor: colors.pill, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, paddingHorizontal: 12 },
+  recordingButton: { backgroundColor: '#A84A3A' },
+  voiceButtonText: { ...typography.caption, fontWeight: '700', color: colors.ink },
+  recordingButtonText: { color: '#fff' },
+  recordingHint: { ...typography.caption, color: '#A84A3A', marginTop: 10 },
+  voiceList: { gap: 10, marginTop: 12 },
+  voiceItem: { minHeight: 52, borderRadius: 16, backgroundColor: colors.paper, borderWidth: 1, borderColor: colors.line, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, gap: 10 },
+  voiceIcon: { width: 30, height: 30, borderRadius: 15, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' },
+  voiceCopy: { flex: 1 },
+  voiceTitle: { ...typography.bodySmall, color: colors.ink, fontWeight: '700' },
+  voiceMeta: { ...typography.caption, color: colors.muted, marginTop: 1 },
+  emptyVoiceText: { ...typography.caption, color: colors.muted, marginTop: 10 },
   deleteButton: { height: 46, borderRadius: 18, borderWidth: 1, borderColor: 'rgba(168,74,58,0.25)', backgroundColor: '#fff', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 12 }, deleteText: { ...typography.button, color: '#A84A3A' }, disabled: { opacity: 0.6 },
   rowBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 26 }, sectionTitle: { ...typography.h3, color: colors.ink }, seeAll: { ...typography.caption, fontWeight: '600', color: colors.muted, textDecorationLine: 'underline' },
   relatedScroll: { marginTop: 16, marginHorizontal: -20 }, relatedContent: { paddingLeft: 20, paddingBottom: 6 },

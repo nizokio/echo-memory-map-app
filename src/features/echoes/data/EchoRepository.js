@@ -11,6 +11,10 @@ export class EchoRepository {
     throw new Error('EchoRepository.addPhotosToEcho must be implemented.');
   }
 
+  async addAudioNoteToEcho() {
+    throw new Error('EchoRepository.addAudioNoteToEcho must be implemented.');
+  }
+
   async deleteEcho() {
     throw new Error('EchoRepository.deleteEcho must be implemented.');
   }

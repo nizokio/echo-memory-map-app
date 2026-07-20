@@ -1,7 +1,7 @@
 const toDateOrNull = (value) => (value ? new Date(value).toISOString() : null);
 const firstRelation = (value) => (Array.isArray(value) ? value[0] : value);
 
-export function mapEchoRecord(record, photoUrls = new Map()) {
+export function mapEchoRecord(record, photoUrls = new Map(), audioUrls = new Map()) {
   const aiMetadata = firstRelation(record.echo_ai_metadata);
 
   const photos = [...(record.echo_photos || [])]
@@ -14,6 +14,16 @@ export function mapEchoRecord(record, photoUrls = new Map()) {
       height: photo.height,
       sortOrder: photo.sort_order,
       capturedAt: toDateOrNull(photo.captured_at),
+    }));
+  const audioNotes = [...(record.echo_audio_notes || [])]
+    .sort((left, right) => left.sort_order - right.sort_order)
+    .map((audio) => ({
+      id: audio.id,
+      storagePath: audio.storage_path,
+      uri: audioUrls.get(audio.storage_path) || null,
+      durationMs: audio.duration_ms,
+      sortOrder: audio.sort_order,
+      capturedAt: toDateOrNull(audio.captured_at),
     }));
 
   return {
@@ -32,6 +42,7 @@ export function mapEchoRecord(record, photoUrls = new Map()) {
     visibility: record.visibility,
     tags: (record.echo_tags || []).map((entry) => entry.tag?.name).filter(Boolean),
     photos,
+    audioNotes,
     aiMetadata: aiMetadata
       ? {
           title: aiMetadata.title,

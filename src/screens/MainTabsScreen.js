@@ -66,7 +66,7 @@ function SearchPlaceholder() {
   return (
     <View style={[styles.placeholderContainer, { paddingTop: insets.top }]}>
       <Text style={styles.placeholderTitle}>AI Semantic Search</Text>
-      <Text style={styles.placeholderText}>Search through all your location memories and Echoes.</Text>
+      <Text style={styles.placeholderText}>Search through your saved memories by place, note, and moment.</Text>
     </View>
   );
 }

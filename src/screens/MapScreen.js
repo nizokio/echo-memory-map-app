@@ -158,18 +158,18 @@ export default function MapScreen({ navigation }) {
         </Pressable>
       </Animated.View>
 
-      {/* Primary FAB "Leave an Echo" (Bottom-Center) */}
+      {/* Primary FAB "Leave a Memory" (Bottom-Center) */}
       <Animated.View style={[styles.fabWrapper, fabStyle]}>
         <Pressable
           style={styles.fab}
           onPressIn={handleFABPressIn}
           onPressOut={handleFABPressOut}
-          onPress={() => {}} // leave echo action
-          accessibilityLabel="Leave an Echo"
+          onPress={() => {}} // leave memory action
+          accessibilityLabel="Leave a memory"
           accessibilityRole="button"
         >
           <Feather name="plus" size={18} color="#fff" style={{ marginRight: 6 }} />
-          <Text style={styles.fabText}>LEAVE AN ECHO</Text>
+          <Text style={styles.fabText}>LEAVE MEMORY</Text>
         </Pressable>
       </Animated.View>
 

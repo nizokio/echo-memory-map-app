@@ -87,7 +87,7 @@ export default function CameraView({ visible, onClose, onEchoSaved }) {
       });
       showToast('Draft ready.');
     } catch (error) {
-      showToast(error.message || 'Unable to prepare Echo.');
+      showToast(error.message || 'Unable to prepare memory.');
     } finally {
       setIsCapturing(false);
     }
@@ -108,7 +108,7 @@ export default function CameraView({ visible, onClose, onEchoSaved }) {
         capturedAt: draft.capturedAt,
         photos: draft.photos,
       });
-      showToast('Echo saved.');
+      showToast('Memory saved.');
       resetDraft();
       onEchoSaved?.();
       onClose?.();
@@ -121,9 +121,9 @@ export default function CameraView({ visible, onClose, onEchoSaved }) {
       const message =
         error.name === 'AuthSessionMissingError'
           ? 'Sign in from Profile first.'
-          : error.message || 'Unable to save Echo.';
+          : error.message || 'Unable to save memory.';
       if (error.name !== 'AuthSessionMissingError') {
-        console.warn('Echo save failed:', error);
+        console.warn('Memory save failed:', error);
       }
       showToast(message);
     } finally {
@@ -143,7 +143,7 @@ export default function CameraView({ visible, onClose, onEchoSaved }) {
           </Pressable>
 
           <View style={styles.topActions}>
-            <Text style={styles.captureTitle}>{draft ? 'Review Echo' : 'New Echo'}</Text>
+            <Text style={styles.captureTitle}>{draft ? 'Review Memory' : 'New Memory'}</Text>
           </View>
 
           <View style={{ width: 40 }} />
@@ -155,7 +155,7 @@ export default function CameraView({ visible, onClose, onEchoSaved }) {
             <View style={styles.draftPanel}>
               <Image source={{ uri: draft.photos[0].uri }} style={styles.previewImage} />
               <View style={styles.draftContent}>
-                <Text style={styles.draftTitle}>New Echo</Text>
+                <Text style={styles.draftTitle}>New Memory</Text>
                 <Text style={styles.draftMeta}>
                   {draft.photos.length} photo{draft.photos.length === 1 ? '' : 's'} - {draft.location.latitude.toFixed(5)}, {draft.location.longitude.toFixed(5)}
                 </Text>
@@ -195,7 +195,7 @@ export default function CameraView({ visible, onClose, onEchoSaved }) {
                 {!session?.access_token ? (
                   <View style={styles.sessionNotice}>
                     <Ionicons name="lock-closed-outline" size={14} color="rgba(255,255,255,0.72)" />
-                    <Text style={styles.sessionNoticeText}>Sign in later to save this Echo.</Text>
+                    <Text style={styles.sessionNoticeText}>Sign in later to save this memory.</Text>
                   </View>
                 ) : null}
                 <View style={styles.captureActions}>
@@ -247,7 +247,7 @@ export default function CameraView({ visible, onClose, onEchoSaved }) {
               onPress={saveDraft}
               style={[styles.saveButton, isSaving && styles.disabledControl]}
               disabled={isCapturing || isSaving}
-              accessibilityLabel="Save Echo"
+              accessibilityLabel="Save memory"
               accessibilityRole="button"
             >
               {isSaving ? (
@@ -269,7 +269,7 @@ export default function CameraView({ visible, onClose, onEchoSaved }) {
           </View>
         ) : null}
 
-        {/* Echo Saved Success Toast */}
+        {/* Memory saved success toast */}
         <Toast
           visible={toastVisible}
           message={toastMessage}

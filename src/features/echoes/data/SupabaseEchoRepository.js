@@ -61,7 +61,7 @@ export class SupabaseEchoRepository extends EchoRepository {
 
     const { data: userData, error: userError } = await supabase.auth.getUser();
     if (userError) throw userError;
-    if (!userData.user) throw new Error('Sign in before saving an Echo.');
+    if (!userData.user) throw new Error('Sign in before saving a memory.');
 
     const { data: echo, error: echoError } = await supabase
       .from('echoes')

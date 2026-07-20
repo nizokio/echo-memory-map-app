@@ -123,7 +123,7 @@ export default function SettingsScreen() {
 
         <Section title="Danger Zone">
           <DisabledRow label="Delete Account" />
-          <DisabledRow label="Delete All Echoes" />
+          <DisabledRow label="Delete All Memories" />
         </Section>
       </ScrollView>
     </View>

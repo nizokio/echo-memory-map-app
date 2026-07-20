@@ -41,7 +41,7 @@ export default function DetailScreen({ navigation, route }) {
       await refresh();
       navigation.goBack();
     } catch (error) {
-      Alert.alert('Unable to delete Echo', error.message || 'Please try again.');
+      Alert.alert('Unable to delete memory', error.message || 'Please try again.');
     } finally {
       setIsDeleting(false);
     }
@@ -82,7 +82,7 @@ export default function DetailScreen({ navigation, route }) {
   };
 
   const confirmDelete = () => {
-    Alert.alert('Delete this Echo?', 'This removes the memory and its photo from Echo.', [
+    Alert.alert('Delete this memory?', 'This removes the memory and its photos from your library.', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Delete', style: 'destructive', onPress: deleteEcho },
     ]);
@@ -135,18 +135,18 @@ export default function DetailScreen({ navigation, route }) {
             disabled={isDeleting}
             style={[styles.deleteButton, isDeleting && styles.disabled]}
             accessibilityRole="button"
-            accessibilityLabel="Delete Echo"
+            accessibilityLabel="Delete memory"
           >
             {isDeleting ? (
               <ActivityIndicator color="#A84A3A" />
             ) : (
               <>
                 <Feather name="trash-2" size={16} color="#A84A3A" />
-                <Text style={styles.deleteText}>Delete Echo</Text>
+                <Text style={styles.deleteText}>Delete Memory</Text>
               </>
             )}
           </Pressable>
-          <View style={styles.rowBetween}><Text style={styles.sectionTitle}>Related echoes</Text><Pressable onPress={() => navigation.navigate('MemoryTimeline', { echo })} accessibilityRole="button"><Text style={styles.seeAll}>View memory</Text></Pressable></View>
+          <View style={styles.rowBetween}><Text style={styles.sectionTitle}>Related memories</Text><Pressable onPress={() => navigation.navigate('MemoryTimeline', { echo })} accessibilityRole="button"><Text style={styles.seeAll}>View memory</Text></Pressable></View>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.relatedScroll} contentContainerStyle={styles.relatedContent}>
             {relatedEchoes.map((relatedEcho) => <EchoCard key={relatedEcho.id} echo={relatedEcho} onPress={() => navigation.push('Detail', { echo: relatedEcho })} />)}
           </ScrollView>

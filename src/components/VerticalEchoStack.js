@@ -34,7 +34,7 @@ export default function VerticalEchoStack({ echoes, currentIndex, onIndexChange,
           <View style={styles.emptyIcon}>
             <Ionicons name="camera-outline" size={26} color={colors.ink} />
           </View>
-          <Text style={styles.emptyTitle}>No Echoes yet</Text>
+          <Text style={styles.emptyTitle}>No memories yet</Text>
           <Text style={styles.emptyText}>{emptyMessage}</Text>
           <Text style={styles.emptyHint}>Tap the camera tab to save your first place memory.</Text>
         </View>

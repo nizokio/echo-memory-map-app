@@ -26,7 +26,7 @@ const formatCapturedDate = (value) => {
   return new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric' }).format(new Date(value));
 };
 
-export default function MapScreen({ navigation }) {
+export default function MapScreen({ navigation, onLeaveMemory }) {
   const insets = useSafeAreaInsets();
   const { echoes } = useEchoes();
   const [selectedPin, setSelectedPin] = useState(null);
@@ -164,7 +164,7 @@ export default function MapScreen({ navigation }) {
           style={styles.fab}
           onPressIn={handleFABPressIn}
           onPressOut={handleFABPressOut}
-          onPress={() => {}} // leave memory action
+          onPress={onLeaveMemory}
           accessibilityLabel="Leave a memory"
           accessibilityRole="button"
         >

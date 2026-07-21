@@ -23,7 +23,7 @@ export default function MainTabsScreen({ navigation }) {
       case 0:
         return <HomeScreen navigation={navigation} onProfilePress={() => setActiveTab(4)} />;
       case 1:
-        return <MapScreen navigation={navigation} />;
+        return <MapScreen navigation={navigation} onLeaveMemory={() => setCameraVisible(true)} />;
       case 3:
         return <NearbyScreen navigation={navigation} echoes={echoes} />;
       case 4:

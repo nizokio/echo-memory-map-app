@@ -141,6 +141,32 @@ export class SupabaseEchoRepository extends EchoRepository {
     if (error) throw error;
   }
 
+  async embedEcho(echoId) {
+    if (!isSupabaseConfigured || !supabase) throw new Error('Supabase is not configured.');
+
+    const { error } = await supabase.functions.invoke('embed-echo', {
+      body: { echoId },
+    });
+
+    if (error) throw error;
+  }
+
+  async searchEchoes(query, echoes, limit = 12) {
+    if (!isSupabaseConfigured || !supabase) throw new Error('Supabase is not configured.');
+    if (!query?.trim()) return [];
+
+    const { data, error } = await supabase.functions.invoke('search-echoes', {
+      body: { query: query.trim(), limit },
+    });
+
+    if (error) throw error;
+
+    const rankById = new Map((data?.matches || []).map((match, index) => [match.echoId, index]));
+    return echoes
+      .filter((echo) => rankById.has(echo.id))
+      .sort((left, right) => rankById.get(left.id) - rankById.get(right.id));
+  }
+
   async addPhotosToEcho({ echoId, photos, capturedAt }) {
     if (!isSupabaseConfigured || !supabase) throw new Error('Supabase is not configured.');
     if (!photos?.length) throw new Error('Choose at least one photo.');

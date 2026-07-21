@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { ActivityIndicator, Image, Pressable, View, Text, ScrollView, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -7,10 +7,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, typography } from '../theme';
 import { useEchoes } from '../features/echoes/application/EchoDataProvider';
 import { useCurrentUser } from '../features/users/application/UserDataProvider';
+import { SupabaseEchoRepository } from '../features/echoes/data/SupabaseEchoRepository';
 import { buildMemoryAlbums, formatMemoryDate, getMemoryTitle } from '../domain/echo/memoryAlbums';
 import SearchBar from '../components/SearchBar';
 
 const NEARBY_RADIUS_METERS = 1000;
+const echoRepository = new SupabaseEchoRepository();
 
 export default function HomeScreen({ navigation, onProfilePress }) {
   const insets = useSafeAreaInsets();
@@ -18,6 +20,8 @@ export default function HomeScreen({ navigation, onProfilePress }) {
   const [nearbyStatus, setNearbyStatus] = useState('idle');
   const [selectedAlbumKey, setSelectedAlbumKey] = useState('recent');
   const [searchQuery, setSearchQuery] = useState('');
+  const [semanticResults, setSemanticResults] = useState([]);
+  const [semanticStatus, setSemanticStatus] = useState('idle');
   const { echoes, isLoading, error, isSupabaseConfigured } = useEchoes();
   const { profile } = useCurrentUser();
   const handlePressCard = useCallback((echo) => navigation.navigate('Detail', { echo }), [navigation]);
@@ -26,8 +30,42 @@ export default function HomeScreen({ navigation, onProfilePress }) {
   const albums = buildMemoryAlbums(echoes);
   const selectedAlbum = albums.find((album) => album.key === selectedAlbumKey) || albums[0];
   const featuredMemory = echoes[0];
-  const searchResults = getSearchResults(echoes, searchQuery);
   const isSearching = searchQuery.trim().length > 0;
+  const localSearchResults = getSearchResults(echoes, searchQuery);
+  const searchResults = semanticStatus === 'ready' ? semanticResults : localSearchResults;
+
+  useEffect(() => {
+    const normalizedQuery = searchQuery.trim();
+    if (normalizedQuery.length < 2) {
+      setSemanticResults([]);
+      setSemanticStatus('idle');
+      return undefined;
+    }
+
+    let cancelled = false;
+    setSemanticStatus('loading');
+
+    const timer = setTimeout(() => {
+      echoRepository
+        .searchEchoes(normalizedQuery, echoes)
+        .then((results) => {
+          if (cancelled) return;
+          setSemanticResults(results);
+          setSemanticStatus(results.length ? 'ready' : 'empty');
+        })
+        .catch((error) => {
+          if (cancelled) return;
+          console.warn('Semantic search failed:', error);
+          setSemanticResults([]);
+          setSemanticStatus('error');
+        });
+    }, 450);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [searchQuery, echoes]);
 
   const emptyMessage = !isSupabaseConfigured
     ? 'Connect Supabase to see your memories.'
@@ -52,7 +90,7 @@ export default function HomeScreen({ navigation, onProfilePress }) {
           <View style={styles.searchResults}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Search results</Text>
-              <Text style={styles.sectionMeta}>{searchResults.length} found</Text>
+              <Text style={styles.sectionMeta}>{getSearchMeta(semanticStatus, searchResults.length)}</Text>
             </View>
             {searchResults.length ? (
               searchResults.map((echo) => (
@@ -221,6 +259,13 @@ function getSearchResults(echoes, query) {
 
     return searchableText.includes(normalizedQuery);
   });
+}
+
+function getSearchMeta(status, count) {
+  if (status === 'loading') return 'Searching...';
+  if (status === 'error') return `${count} local`;
+  if (status === 'ready') return `${count} semantic`;
+  return `${count} found`;
 }
 
 function getDistanceMeters(left, right) {

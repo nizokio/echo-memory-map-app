@@ -117,6 +117,10 @@ export default function CameraView({ visible, onClose, onEchoSaved }) {
         .captionEcho(echoId)
         .then(() => onEchoSaved?.())
         .catch((error) => console.warn('Echo caption failed:', error));
+
+      void echoRepository
+        .embedEcho(echoId)
+        .catch((error) => console.warn('Echo embedding failed:', error));
     } catch (error) {
       const message =
         error.name === 'AuthSessionMissingError'

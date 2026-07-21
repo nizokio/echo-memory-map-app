@@ -7,6 +7,14 @@ export class EchoRepository {
     throw new Error('EchoRepository.createEcho must be implemented.');
   }
 
+  async embedEcho() {
+    throw new Error('EchoRepository.embedEcho must be implemented.');
+  }
+
+  async searchEchoes() {
+    throw new Error('EchoRepository.searchEchoes must be implemented.');
+  }
+
   async addPhotosToEcho() {
     throw new Error('EchoRepository.addPhotosToEcho must be implemented.');
   }

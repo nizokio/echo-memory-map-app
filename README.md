@@ -9,6 +9,7 @@ Built for OpenAI Build Week.
 - Google sign-in through Supabase Auth
 - Create memories with one or more photos, a note, current GPS location, and timestamp
 - Home view with albums, recent memories, local search, and nearby memories
+- Semantic memory search using Gemini embeddings and pgvector
 - Map view with saved memories
 - Memory detail page with photos, typed note, AI caption when available, voice notes, and delete
 - Optional Gemini-powered image captioning through a Supabase Edge Function
@@ -54,6 +55,7 @@ Run these SQL migrations in order from the Supabase SQL Editor or Supabase CLI:
 supabase/migrations/202607160001_create_echo_foundation.sql
 supabase/migrations/202607160002_fix_echo_photo_storage_policies.sql
 supabase/migrations/202607200001_create_echo_audio_notes.sql
+supabase/migrations/202607210001_add_semantic_search.sql
 ```
 
 They create:
@@ -62,7 +64,8 @@ They create:
 - private `echo-photos` bucket
 - private `echo-audio` bucket
 - profile bootstrap support
-- AI metadata and embedding tables for later AI features
+- AI metadata and embedding tables
+- pgvector index and `match_echoes` semantic-search RPC
 
 ## Google Auth Setup
 
@@ -86,20 +89,22 @@ https://YOUR_SUPABASE_PROJECT_REF.supabase.co/auth/v1/callback
 
 No Android SHA-1 fingerprint is required for this Supabase browser-based OAuth flow.
 
-## Optional AI Captioning
+## Optional AI
 
-Captioning is optional. Memories still save if caption generation fails.
+AI is optional. Memories still save if captioning or embedding generation fails.
 
 Set Supabase Edge Function secrets:
 
 ```bash
-npx supabase secrets set AI_PROVIDER=gemini GEMINI_API_KEY=your-key --project-ref YOUR_PROJECT_REF
+npx supabase secrets set AI_PROVIDER=gemini GEMINI_API_KEY=your-key GEMINI_EMBEDDING_MODEL=gemini-embedding-2 GEMINI_EMBEDDING_DIMENSIONS=768 --project-ref YOUR_PROJECT_REF
 ```
 
-Deploy the function:
+Deploy the functions:
 
 ```bash
 npx supabase functions deploy caption-echo --project-ref YOUR_PROJECT_REF
+npx supabase functions deploy embed-echo --project-ref YOUR_PROJECT_REF
+npx supabase functions deploy search-echoes --project-ref YOUR_PROJECT_REF
 ```
 
 ## Development Builds
@@ -124,14 +129,6 @@ npx expo start --dev-client -c
 
 ## AI Roadmap
 
-Current MVP uses AI only for optional image captions.
+Current MVP uses AI for optional image captions and semantic memory search.
 
-Next AI implementation should be semantic search:
-
-1. Generate embeddings for new memories from note, location text, tags, and AI caption.
-2. Store vectors in the existing `echo_embeddings` table.
-3. Generate a query embedding when the user searches.
-4. Use pgvector to retrieve matching memories.
-5. Show ranked results directly, without chat or RAG summaries.
-
-LLM synthesis should come later, only after retrieval works well.
+LLM synthesis should come later, only after retrieval works well. The app should remain retrieval-first, not a chatbot.

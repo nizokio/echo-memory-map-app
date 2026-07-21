@@ -17,7 +17,7 @@ const tabs = [
   { key: 'home', icon: 'home-outline', iconActive: 'home' },
   { key: 'map', icon: 'navigate-outline', iconActive: 'navigate' },
   { key: 'camera', icon: 'camera-outline', iconActive: 'camera' }, // Treated as normal tab
-  { key: 'search', icon: 'search-outline', iconActive: 'search' },
+  { key: 'nearby', icon: 'location-outline', iconActive: 'location' },
   { key: 'settings', icon: 'settings-outline', iconActive: 'settings' },
 ];
 

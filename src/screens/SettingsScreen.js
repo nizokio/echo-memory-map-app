@@ -5,15 +5,22 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, typography } from '../theme';
 import { useAuth } from '../features/auth/application/AuthDataProvider';
 import { useCurrentUser } from '../features/users/application/UserDataProvider';
+import { useEchoes } from '../features/echoes/application/EchoDataProvider';
+import { SupabaseEchoRepository } from '../features/echoes/data/SupabaseEchoRepository';
 
 const version = '0.1.0';
+const echoRepository = new SupabaseEchoRepository();
 
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const { error, isAuthenticated, isLoading, signInWithGoogle, signOut, user } = useAuth();
   const { profile } = useCurrentUser();
+  const { echoes } = useEchoes();
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [indexingStatus, setIndexingStatus] = useState('idle');
+  const [indexedCount, setIndexedCount] = useState(0);
+  const [indexingError, setIndexingError] = useState('');
 
   const displayName = profile?.displayName || user?.email || 'Echo user';
   const email = user?.email || 'Not signed in';
@@ -35,6 +42,25 @@ export default function SettingsScreen() {
       await signInWithGoogle();
     } finally {
       setIsSigningIn(false);
+    }
+  };
+
+  const handleIndexMemories = async () => {
+    if (!isAuthenticated || indexingStatus === 'loading') return;
+
+    setIndexingStatus('loading');
+    setIndexedCount(0);
+    setIndexingError('');
+
+    try {
+      for (let index = 0; index < echoes.length; index += 1) {
+        await echoRepository.embedEcho(echoes[index].id);
+        setIndexedCount(index + 1);
+      }
+      setIndexingStatus('complete');
+    } catch (nextError) {
+      setIndexingError(nextError.message || 'Unable to index memories.');
+      setIndexingStatus('error');
     }
   };
 
@@ -121,6 +147,28 @@ export default function SettingsScreen() {
           </Pressable>
         </Section>
 
+        <Section title="Developer">
+          <InfoRow label="Memories" value={`${echoes.length}`} />
+          <Pressable
+            style={[styles.secondaryButton, (!isAuthenticated || indexingStatus === 'loading' || echoes.length === 0) && styles.disabled]}
+            onPress={handleIndexMemories}
+            disabled={!isAuthenticated || indexingStatus === 'loading' || echoes.length === 0}
+            accessibilityRole="button"
+            accessibilityLabel="Index memories for semantic search"
+          >
+            {indexingStatus === 'loading' ? (
+              <ActivityIndicator color={colors.ink} />
+            ) : (
+              <>
+                <Ionicons name="sparkles-outline" size={18} color={colors.ink} />
+                <Text style={styles.secondaryButtonText}>Index Memories</Text>
+              </>
+            )}
+          </Pressable>
+          <Text style={styles.helperText}>{getIndexingMessage(indexingStatus, indexedCount, echoes.length, isAuthenticated)}</Text>
+          {indexingError ? <Text style={styles.errorText}>{indexingError}</Text> : null}
+        </Section>
+
         <Section title="Danger Zone">
           <DisabledRow label="Delete Account" />
           <DisabledRow label="Delete All Memories" />
@@ -128,6 +176,15 @@ export default function SettingsScreen() {
       </ScrollView>
     </View>
   );
+}
+
+function getIndexingMessage(status, indexedCount, totalCount, isAuthenticated) {
+  if (!isAuthenticated) return 'Sign in to index your memories for semantic search.';
+  if (totalCount === 0) return 'Create a memory before indexing semantic search.';
+  if (status === 'loading') return `Indexing ${indexedCount} / ${totalCount} memories...`;
+  if (status === 'complete') return `Indexed ${indexedCount} memories for semantic search.`;
+  if (status === 'error') return 'Indexing stopped. You can try again after checking Supabase function logs.';
+  return 'Run this once before demo so older memories appear in semantic search.';
 }
 
 function Section({ title, children }) {
@@ -275,6 +332,12 @@ const styles = StyleSheet.create({
   comingSoon: {
     ...typography.caption,
     color: colors.muted,
+    marginTop: 10,
+  },
+  helperText: {
+    ...typography.caption,
+    color: colors.muted,
+    lineHeight: 18,
     marginTop: 10,
   },
   infoRow: {

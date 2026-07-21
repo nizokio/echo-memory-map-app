@@ -32,7 +32,6 @@ export class SupabaseAuthRepository extends AuthRepository {
     }
 
     const redirectTo = this.getRedirectUri();
-    console.log('Echo Google OAuth redirect URL:', redirectTo);
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {

@@ -77,19 +77,30 @@ class GeminiProvider implements AiProvider {
   async generateEmbedding({ text, taskType = 'RETRIEVAL_DOCUMENT' }: EmbeddingRequest): Promise<EmbeddingResult> {
     if (!this.apiKey) throw new Error('GEMINI_API_KEY is not configured.');
     if (!text.trim()) throw new Error('Embedding text is empty.');
+    const usesEmbedding2 = this.embeddingModel === 'gemini-embedding-2';
+    const embeddingText = usesEmbedding2 ? formatEmbedding2Text(text, taskType) : text;
 
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${this.embeddingModel}:embedContent?key=${encodeURIComponent(this.apiKey)}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          content: {
-            parts: [{ text }],
-          },
-          taskType,
-          outputDimensionality: this.embeddingDimensions,
-        }),
+        body: JSON.stringify(
+          usesEmbedding2
+            ? {
+                content: {
+                  parts: [{ text: embeddingText }],
+                },
+                output_dimensionality: this.embeddingDimensions,
+              }
+            : {
+                content: {
+                  parts: [{ text: embeddingText }],
+                },
+                taskType,
+                outputDimensionality: this.embeddingDimensions,
+              }
+        ),
       }
     );
 
@@ -117,4 +128,10 @@ function firstSentence(value: string) {
   const normalized = value.replace(/\s+/g, ' ').trim();
   const sentenceEnd = normalized.search(/[.!?](?:\s|$)/);
   return sentenceEnd === -1 ? normalized : normalized.slice(0, sentenceEnd + 1);
+}
+
+function formatEmbedding2Text(text: string, taskType: EmbeddingRequest['taskType']) {
+  const normalized = text.replace(/\s+/g, ' ').trim();
+  if (taskType === 'RETRIEVAL_QUERY') return `task: search result | query: ${normalized}`;
+  return `title: memory | text: ${normalized}`;
 }

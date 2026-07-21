@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Image, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, typography } from '../theme';
@@ -9,6 +9,7 @@ import { useEchoes } from '../features/echoes/application/EchoDataProvider';
 import { SupabaseEchoRepository } from '../features/echoes/data/SupabaseEchoRepository';
 
 const version = '0.1.0';
+const repositoryUrl = 'https://github.com/nizokio/echo-memory-map-app';
 const echoRepository = new SupabaseEchoRepository();
 
 export default function SettingsScreen() {
@@ -141,7 +142,12 @@ export default function SettingsScreen() {
         <Section title="About">
           <InfoRow label="Version" value={version} />
           <InfoRow label="Build" value="OpenAI Build Week" />
-          <Pressable style={styles.secondaryButton} accessibilityRole="button" accessibilityLabel="GitHub repository">
+          <Pressable
+            style={styles.secondaryButton}
+            onPress={() => Linking.openURL(repositoryUrl)}
+            accessibilityRole="button"
+            accessibilityLabel="GitHub repository"
+          >
             <Ionicons name="logo-github" size={18} color={colors.ink} />
             <Text style={styles.secondaryButtonText}>GitHub Repository</Text>
           </Pressable>

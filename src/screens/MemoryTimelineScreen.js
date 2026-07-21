@@ -7,7 +7,6 @@ import { colors, typography } from '../theme';
 import FavoriteButton from '../components/FavoriteButton';
 import SegmentedTabs from '../components/SegmentedTabs';
 import DayAccordion from '../components/DayAccordion';
-import Toast from '../components/Toast';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 const TAB_LABELS = ['Memory', 'Photos', 'Location'];
@@ -17,7 +16,6 @@ export default function MemoryTimelineScreen({ navigation, route }) {
   const insets = useSafeAreaInsets();
   const echo = route.params?.echo;
   const [activeTab, setActiveTab] = useState(0);
-  const [toastVisible, setToastVisible] = useState(false);
   const actionScale = useSharedValue(1);
   const reduceMotion = useReducedMotion();
   const actionStyle = useAnimatedStyle(() => ({ transform: [{ scale: actionScale.value }] }));
@@ -32,7 +30,7 @@ export default function MemoryTimelineScreen({ navigation, route }) {
       { label: 'Note', text: echo.note },
     ],
   }));
-  const handleAction = useCallback(() => setToastVisible(true), []);
+  const handleAction = useCallback(() => navigation.goBack(), [navigation]);
 
   return (
     <View style={styles.container}>
@@ -47,8 +45,7 @@ export default function MemoryTimelineScreen({ navigation, route }) {
         {activeTab === 1 ? <PhotosTab echo={echo} /> : null}
         {activeTab === 2 ? <LocationTab echo={echo} /> : null}
       </ScrollView>
-      <AnimatedPressable style={[styles.actionBtn, actionStyle, { bottom: insets.bottom + 22 }]} onPress={handleAction} onPressIn={() => !reduceMotion && (actionScale.value = withTiming(0.97, { duration: 150 }))} onPressOut={() => (actionScale.value = withTiming(1, { duration: 150 }))} accessibilityLabel="Mark for revisit" accessibilityRole="button"><Text style={styles.actionBtnText}>Mark for revisit</Text></AnimatedPressable>
-      <Toast message="Saved for a future visit" visible={toastVisible} onHide={() => setToastVisible(false)} />
+      <AnimatedPressable style={[styles.actionBtn, actionStyle, { bottom: insets.bottom + 22 }]} onPress={handleAction} onPressIn={() => !reduceMotion && (actionScale.value = withTiming(0.97, { duration: 150 }))} onPressOut={() => (actionScale.value = withTiming(1, { duration: 150 }))} accessibilityLabel="Back to memory" accessibilityRole="button"><Text style={styles.actionBtnText}>Back to memory</Text></AnimatedPressable>
     </View>
   );
 }

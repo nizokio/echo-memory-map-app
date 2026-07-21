@@ -33,6 +33,8 @@ export default function MapScreen({ navigation, onLeaveMemory }) {
   const [recenterTrigger, setRecenterTrigger] = useState(0);
   const [searchFocused, setSearchFocused] = useState(false);
   const [searchText, setSearchText] = useState('');
+  const normalizedSearchText = searchText.trim().toLowerCase();
+  const visibleEchoes = normalizedSearchText ? echoes.filter((echo) => getMapSearchText(echo).includes(normalizedSearchText)) : echoes;
 
   // Cycling placeholder text with opacity crossfade
   const [displayText, setDisplayText] = useState(placeholders[0]);
@@ -111,7 +113,7 @@ export default function MapScreen({ navigation, onLeaveMemory }) {
   return (
     <View style={styles.container}>
       {/* Full-bleed Map component */}
-      <MapWebView echoes={echoes} onPinTap={handlePinTap} recenterTrigger={recenterTrigger} />
+      <MapWebView echoes={visibleEchoes} onPinTap={handlePinTap} recenterTrigger={recenterTrigger} />
 
       {/* Floating Search Bar (Top) */}
       <View style={[styles.searchOuter, { paddingTop: insets.top + 10 }]}>
@@ -138,10 +140,36 @@ export default function MapScreen({ navigation, onLeaveMemory }) {
             )}
           </View>
           
-          <Pressable style={styles.micButton} accessibilityLabel="Voice search" accessibilityRole="button">
-            <Feather name="mic" size={15} color="rgba(255,255,255,0.6)" />
-          </Pressable>
+          {searchText.length > 0 ? (
+            <Pressable
+              style={styles.clearSearchButton}
+              onPress={() => setSearchText('')}
+              accessibilityLabel="Clear map search"
+              accessibilityRole="button"
+            >
+              <Feather name="x" size={15} color="rgba(255,255,255,0.72)" />
+            </Pressable>
+          ) : null}
         </View>
+        {normalizedSearchText ? (
+          <View style={styles.searchResults}>
+            {visibleEchoes.length ? (
+              visibleEchoes.slice(0, 4).map((echo) => (
+                <Pressable
+                  key={echo.id}
+                  style={styles.searchResultItem}
+                  onPress={() => handlePinTap(getPinFromEcho(echo))}
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.searchResultTitle} numberOfLines={1}>{echo.note?.trim() || echo.location?.name || 'Saved memory'}</Text>
+                  <Text style={styles.searchResultMeta} numberOfLines={1}>{echo.location?.locality || formatCapturedDate(echo.capturedAt)}</Text>
+                </Pressable>
+              ))
+            ) : (
+              <Text style={styles.searchEmpty}>No map memories match this search.</Text>
+            )}
+          </View>
+        ) : null}
       </View>
 
       {/* Location Recenter Button (Bottom-Right, floated above tab bar) */}
@@ -207,6 +235,30 @@ export default function MapScreen({ navigation, onLeaveMemory }) {
   );
 }
 
+function getPinFromEcho(echo) {
+  return {
+    id: echo.id,
+    title: echo.aiMetadata?.title || echo.note?.trim() || echo.location?.name || 'Saved memory',
+    location: echo.location?.name || echo.location?.locality || 'Saved place',
+    capturedAt: echo.capturedAt,
+  };
+}
+
+function getMapSearchText(echo) {
+  return [
+    echo.note,
+    echo.location?.name,
+    echo.location?.locality,
+    echo.aiMetadata?.title,
+    echo.aiMetadata?.summary,
+    echo.aiMetadata?.caption,
+    ...(echo.tags || []),
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+}
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -219,6 +271,35 @@ const styles = StyleSheet.create({
     right: 20,
     top: 0,
     zIndex: 30,
+  },
+  searchResults: {
+    marginTop: 10,
+    borderRadius: 18,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(20, 22, 26, 0.92)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+  },
+  searchResultItem: {
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.06)',
+  },
+  searchResultTitle: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  searchResultMeta: {
+    color: 'rgba(255,255,255,0.45)',
+    fontSize: 11,
+    marginTop: 3,
+  },
+  searchEmpty: {
+    color: 'rgba(255,255,255,0.56)',
+    fontSize: 12,
+    padding: 14,
   },
   searchContainer: {
     height: 48,
@@ -264,7 +345,7 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.4)',
     fontSize: 13,
   },
-  micButton: {
+  clearSearchButton: {
     padding: 6,
     borderRadius: 15,
     marginLeft: 6,

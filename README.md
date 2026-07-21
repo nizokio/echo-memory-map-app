@@ -127,6 +127,31 @@ After installing the APK:
 npx expo start --dev-client -c
 ```
 
+## Demo Script
+
+Use this flow for judging:
+
+1. Sign in with Google from Settings.
+2. Tap the camera tab.
+3. Choose photos or take a new photo.
+4. Add a memorable note, for example `Hackathon day with the laptop setup`.
+5. Save the memory.
+6. Confirm it appears on Home.
+7. Open Map and confirm the memory marker appears.
+8. Open the memory detail page.
+9. Add a voice note.
+10. Return to Home and search for a word from the note.
+11. Open Settings and tap `Index Memories`.
+12. Return to Home and try a semantic search like `coding setup` or `work session`.
+13. Open Nearby and tap `Find Memories Near Me`.
+
+Expected result:
+
+- Memory creation works without AI blocking save.
+- Home, Map, detail, search, nearby, and voice notes all use the same saved memory.
+- Semantic search improves results after memories are indexed.
+- If AI services fail, local search still works.
+
 ## AI Roadmap
 
 Current MVP uses AI for optional image captions and semantic memory search.

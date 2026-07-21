@@ -17,6 +17,7 @@ export default function HomeScreen({ navigation, onProfilePress }) {
   const [nearbyItems, setNearbyItems] = useState([]);
   const [nearbyStatus, setNearbyStatus] = useState('idle');
   const [selectedAlbumKey, setSelectedAlbumKey] = useState('recent');
+  const [searchQuery, setSearchQuery] = useState('');
   const { echoes, isLoading, error, isSupabaseConfigured } = useEchoes();
   const { profile } = useCurrentUser();
   const handlePressCard = useCallback((echo) => navigation.navigate('Detail', { echo }), [navigation]);
@@ -25,6 +26,8 @@ export default function HomeScreen({ navigation, onProfilePress }) {
   const albums = buildMemoryAlbums(echoes);
   const selectedAlbum = albums.find((album) => album.key === selectedAlbumKey) || albums[0];
   const featuredMemory = echoes[0];
+  const searchResults = getSearchResults(echoes, searchQuery);
+  const isSearching = searchQuery.trim().length > 0;
 
   const emptyMessage = !isSupabaseConfigured
     ? 'Connect Supabase to see your memories.'
@@ -43,9 +46,25 @@ export default function HomeScreen({ navigation, onProfilePress }) {
             <LinearGradient colors={[colors.avatarGradientStart, colors.avatarGradientEnd]} start={{ x: 0.2, y: 0 }} end={{ x: 0.8, y: 1 }} style={styles.avatar}><Text style={styles.avatarEmoji}>{avatarInitial}</Text></LinearGradient>
           </Pressable>
         </View>
-        <SearchBar />
+        <SearchBar value={searchQuery} onChangeText={setSearchQuery} />
 
-        {featuredMemory ? (
+        {isSearching ? (
+          <View style={styles.searchResults}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Search results</Text>
+              <Text style={styles.sectionMeta}>{searchResults.length} found</Text>
+            </View>
+            {searchResults.length ? (
+              searchResults.map((echo) => (
+                <SearchResultCard key={echo.id} echo={echo} onPress={() => handlePressCard(echo)} />
+              ))
+            ) : (
+              <Text style={styles.nearbyMessage}>No memories match that search.</Text>
+            )}
+          </View>
+        ) : null}
+
+        {!isSearching && featuredMemory ? (
           <Pressable onPress={() => handlePressCard(featuredMemory)} style={styles.featuredCard} accessibilityRole="button">
             {featuredMemory.photos[0]?.uri ? (
               <Image source={{ uri: featuredMemory.photos[0].uri }} style={styles.featuredImage} />
@@ -59,39 +78,43 @@ export default function HomeScreen({ navigation, onProfilePress }) {
               <Text style={styles.featuredMeta}>{formatMemoryDate(featuredMemory.capturedAt)} - {featuredMemory.photos.length} photo{featuredMemory.photos.length === 1 ? '' : 's'}</Text>
             </View>
           </Pressable>
-        ) : (
+        ) : !isSearching ? (
           <View style={styles.emptyState}>
             <Ionicons name="albums-outline" size={28} color={colors.ink} />
             <Text style={styles.emptyTitle}>No memories yet</Text>
             <Text style={styles.emptyText}>{emptyMessage}</Text>
           </View>
-        )}
+        ) : null}
 
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Albums</Text>
-          <Text style={styles.sectionMeta}>{echoes.length} memories</Text>
-        </View>
-        <View style={styles.albumGrid}>
-          {albums.map((album) => (
-            <Pressable
-              key={album.key}
-              onPress={() => {
-                setSelectedAlbumKey(album.key);
-                navigation.navigate('Album', { albumKey: album.key });
-              }}
-              style={[styles.albumCard, selectedAlbum?.key === album.key && styles.albumCardActive]}
-              accessibilityRole="button"
-            >
-              <View style={[styles.albumIcon, selectedAlbum?.key === album.key && styles.albumIconActive]}>
-                <Ionicons name={album.icon} size={18} color={selectedAlbum?.key === album.key ? '#fff' : colors.ink} />
-              </View>
-              <Text style={styles.albumTitle}>{album.title}</Text>
-              <Text style={styles.albumCount}>{album.items.length} memories</Text>
-            </Pressable>
-          ))}
-        </View>
+        {!isSearching ? (
+          <>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Albums</Text>
+              <Text style={styles.sectionMeta}>{echoes.length} memories</Text>
+            </View>
+            <View style={styles.albumGrid}>
+              {albums.map((album) => (
+                <Pressable
+                  key={album.key}
+                  onPress={() => {
+                    setSelectedAlbumKey(album.key);
+                    navigation.navigate('Album', { albumKey: album.key });
+                  }}
+                  style={[styles.albumCard, selectedAlbum?.key === album.key && styles.albumCardActive]}
+                  accessibilityRole="button"
+                >
+                  <View style={[styles.albumIcon, selectedAlbum?.key === album.key && styles.albumIconActive]}>
+                    <Ionicons name={album.icon} size={18} color={selectedAlbum?.key === album.key ? '#fff' : colors.ink} />
+                  </View>
+                  <Text style={styles.albumTitle}>{album.title}</Text>
+                  <Text style={styles.albumCount}>{album.items.length} memories</Text>
+                </Pressable>
+              ))}
+            </View>
+          </>
+        ) : null}
 
-        <View style={styles.nearbyHeader}>
+        {!isSearching ? <View style={styles.nearbyHeader}>
           <View>
             <Text style={styles.nearbyTitle}>Nearby</Text>
             <Text style={styles.nearbySubtitle}>Memories within 1 km</Text>
@@ -137,8 +160,8 @@ export default function HomeScreen({ navigation, onProfilePress }) {
               <Text style={styles.nearbyButtonText}>Find</Text>
             )}
           </Pressable>
-        </View>
-        {nearbyStatus !== 'idle' ? (
+        </View> : null}
+        {!isSearching && nearbyStatus !== 'idle' ? (
           <View style={styles.nearbyPanel}>
             {nearbyStatus === 'ready' ? (
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.nearbyList}>
@@ -158,24 +181,46 @@ export default function HomeScreen({ navigation, onProfilePress }) {
           </View>
         ) : null}
 
-        <View style={styles.sectionHeader}>
+        {!isSearching ? <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>{selectedAlbum?.title || 'Recently Added'}</Text>
           <Pressable onPress={() => navigation.navigate('Album', { albumKey: selectedAlbum?.key || 'recent' })} accessibilityRole="button">
             <Text style={styles.sectionMeta}>{selectedAlbum?.items.length || 0} memories</Text>
           </Pressable>
-        </View>
-        {selectedAlbum?.items.length ? (
+        </View> : null}
+        {!isSearching && selectedAlbum?.items.length ? (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.memoryList}>
             {selectedAlbum.items.slice(0, 8).map((echo) => (
               <MemoryPreviewCard key={echo.id} echo={echo} onPress={() => handlePressCard(echo)} />
             ))}
           </ScrollView>
-        ) : (
+        ) : !isSearching ? (
           <Text style={styles.nearbyMessage}>This album will fill as you capture more memories.</Text>
-        )}
+        ) : null}
       </ScrollView>
     </View>
   );
+}
+
+function getSearchResults(echoes, query) {
+  const normalizedQuery = query.trim().toLowerCase();
+  if (!normalizedQuery) return [];
+
+  return echoes.filter((echo) => {
+    const searchableText = [
+      echo.note,
+      echo.location?.name,
+      echo.location?.locality,
+      echo.aiMetadata?.title,
+      echo.aiMetadata?.summary,
+      echo.aiMetadata?.caption,
+      ...(echo.tags || []),
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase();
+
+    return searchableText.includes(normalizedQuery);
+  });
 }
 
 function getDistanceMeters(left, right) {
@@ -227,6 +272,22 @@ function MemoryPreviewCard({ echo, onPress }) {
   );
 }
 
+function SearchResultCard({ echo, onPress }) {
+  const photoUri = echo.photos[0]?.uri;
+
+  return (
+    <Pressable onPress={onPress} style={styles.searchResultCard} accessibilityRole="button">
+      {photoUri ? <Image source={{ uri: photoUri }} style={styles.searchResultImage} /> : <View style={styles.searchResultFallback} />}
+      <View style={styles.searchResultCopy}>
+        <Text style={styles.searchResultTitle} numberOfLines={2}>{getMemoryTitle(echo)}</Text>
+        <Text style={styles.searchResultNote} numberOfLines={2}>{echo.note || echo.aiMetadata?.caption || 'Saved memory'}</Text>
+        <Text style={styles.searchResultMeta} numberOfLines={1}>{formatMemoryDate(echo.capturedAt)} - {echo.location?.locality || 'Unknown place'}</Text>
+      </View>
+      <Ionicons name="chevron-forward" size={18} color={colors.muted} />
+    </Pressable>
+  );
+}
+
 function formatNearbyTime(value) {
   if (!value) return 'Unknown time';
 
@@ -265,6 +326,14 @@ const styles = StyleSheet.create({
   sectionHeader: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: 24, marginBottom: 12 },
   sectionTitle: { ...typography.h3, color: colors.ink, fontSize: 22 },
   sectionMeta: { ...typography.caption, color: colors.muted },
+  searchResults: { marginTop: 2 },
+  searchResultCard: { minHeight: 112, borderRadius: 22, backgroundColor: '#fff', borderWidth: 1, borderColor: colors.line, flexDirection: 'row', alignItems: 'center', padding: 10, gap: 12, marginBottom: 12 },
+  searchResultImage: { width: 82, height: 82, borderRadius: 17, resizeMode: 'cover' },
+  searchResultFallback: { width: 82, height: 82, borderRadius: 17, backgroundColor: colors.pill },
+  searchResultCopy: { flex: 1 },
+  searchResultTitle: { ...typography.bodySmall, color: colors.ink, fontWeight: '800', lineHeight: 19 },
+  searchResultNote: { ...typography.caption, color: colors.descText, lineHeight: 17, marginTop: 4 },
+  searchResultMeta: { ...typography.caption, color: colors.muted, marginTop: 6 },
   albumGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   albumCard: { width: '48%', minHeight: 112, borderRadius: 20, backgroundColor: '#fff', borderWidth: 1, borderColor: colors.line, padding: 14, justifyContent: 'space-between' },
   albumCardActive: { borderColor: colors.gold },

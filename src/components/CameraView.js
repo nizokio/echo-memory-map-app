@@ -85,7 +85,7 @@ export default function CameraView({ visible, onClose, onEchoSaved }) {
         },
         capturedAt: new Date().toISOString(),
       });
-      showToast('Draft ready.');
+      showToast('Memory draft ready.');
     } catch (error) {
       showToast(error.message || 'Unable to prepare memory.');
     } finally {
@@ -155,7 +155,8 @@ export default function CameraView({ visible, onClose, onEchoSaved }) {
             <View style={styles.draftPanel}>
               <Image source={{ uri: draft.photos[0].uri }} style={styles.previewImage} />
               <View style={styles.draftContent}>
-                <Text style={styles.draftTitle}>New Memory</Text>
+                <Text style={styles.draftLabel}>Photos and place attached</Text>
+                <Text style={styles.draftTitle}>What happened here?</Text>
                 <Text style={styles.draftMeta}>
                   {draft.photos.length} photo{draft.photos.length === 1 ? '' : 's'} - {draft.location.latitude.toFixed(5)}, {draft.location.longitude.toFixed(5)}
                 </Text>
@@ -172,7 +173,7 @@ export default function CameraView({ visible, onClose, onEchoSaved }) {
                 <TextInput
                   value={note}
                   onChangeText={setNote}
-                  placeholder="What do you want to remember?"
+                  placeholder="Write the detail your future self will search for..."
                   placeholderTextColor="rgba(255,255,255,0.45)"
                   multiline
                   maxLength={180}
@@ -234,14 +235,14 @@ export default function CameraView({ visible, onClose, onEchoSaved }) {
         {draft ? (
           <View style={styles.bottomBar}>
             <Pressable
-              onPress={() => captureDraft('camera')}
+              onPress={() => captureDraft('library')}
               style={styles.draftAction}
               disabled={isCapturing || isSaving}
-              accessibilityLabel="Retake photo"
+              accessibilityLabel="Add more photos"
               accessibilityRole="button"
             >
-              <Ionicons name="camera-outline" size={22} color="#fff" />
-              <Text style={styles.draftActionText}>Retake</Text>
+              <Ionicons name="images-outline" size={22} color="#fff" />
+              <Text style={styles.draftActionText}>More Photos</Text>
             </Pressable>
             <Pressable
               onPress={saveDraft}
@@ -253,7 +254,7 @@ export default function CameraView({ visible, onClose, onEchoSaved }) {
               {isSaving ? (
                 <ActivityIndicator color="#000" />
               ) : (
-                <Text style={styles.saveButtonText}>Save</Text>
+                <Text style={styles.saveButtonText}>Save Memory</Text>
               )}
             </Pressable>
             <Pressable
@@ -440,6 +441,14 @@ const styles = StyleSheet.create({
   },
   draftContent: {
     paddingTop: 16,
+  },
+  draftLabel: {
+    color: 'rgba(255,255,255,0.54)',
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0,
+    textTransform: 'uppercase',
+    marginBottom: 5,
   },
   draftTitle: {
     color: '#fff',

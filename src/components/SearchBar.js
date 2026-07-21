@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, TextInput, StyleSheet } from 'react-native';
 import { Pressable } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import Animated, {
@@ -12,7 +12,7 @@ import { colors, typography } from '../theme';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-export default function SearchBar() {
+export default function SearchBar({ value, onChangeText, onFilterPress }) {
   const filterScale = useSharedValue(1);
   const reduceMotion = useReducedMotion();
 
@@ -31,12 +31,20 @@ export default function SearchBar() {
     <View style={styles.row}>
       <View style={styles.bar}>
         <Feather name="search" size={16} color={colors.muted} />
-        <Text style={styles.placeholder}>Search</Text>
+        <TextInput
+          value={value}
+          onChangeText={onChangeText}
+          placeholder="Search memories"
+          placeholderTextColor={colors.muted}
+          style={styles.input}
+          returnKeyType="search"
+        />
       </View>
       <AnimatedPressable
         style={[styles.filterBtn, filterAnimStyle]}
         onPressIn={onFilterPressIn}
         onPressOut={onFilterPressOut}
+        onPress={onFilterPress}
         accessibilityLabel="Filter"
         accessibilityRole="button"
       >
@@ -62,9 +70,11 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 20,
   },
-  placeholder: {
+  input: {
+    flex: 1,
     ...typography.body,
-    color: colors.muted,
+    color: colors.ink,
+    padding: 0,
   },
   filterBtn: {
     width: 48,
